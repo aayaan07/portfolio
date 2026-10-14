@@ -1,30 +1,40 @@
 ---
-// Games Section
+// Games Section - Interactive List with Gliding Highlight & Floating Poster Preview
 const games = [
   {
-    title: 'God of War & Ragnarök',
-    studio: 'Santa Monica Studio • 2018 / 2022',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBFoMsWqcz-nUtRzkHpmGc0nLAoZ7DbzHnOLFFxxHToE5u-RogyruGKGAQejHfR7AO4zRerwaxIENnSdUlBkggVC5EpBMYKA_HWmtDHctS86H_mYufBnJ57eYcgJTgzoL_yfbVl2ZU0DC2LlSsLFvHQms7hmU6RLtQBN6Pmfd3XDfDC-qwrOyyuJadI29YKHtWbR28kqxdh-lUTZg51Qz3ZMMZnd2Td0K4rl8bbDyZa1sEXyI1q2akS',
+    title: 'God of War (2018)',
+    year: '2026',
+    img: '/games/god-of-war-2018.webp',
   },
   {
-    title: 'The Last of Us Part I',
-    studio: 'Naughty Dog • 2022',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDdNgexnagx-WV1RsbjJtyd8g7pkyZZmL1tWx3Ts-0Dro0Tuhaf_Frnc8-zb7FBsqTsJWsPQFlKil5HKLl31rgak3x8GREXZTruxCr-NGFaZXBBFPkSm_yOA6FfRGaFIAF1Kzf4Gs2qja3kpzBqMJKYYTzQKhsfjR6oaMDexhhRrV7t1uskDJ-ZXnDhfMpmMTk0BciQYOQUr8UJ8wAKIF9F3WIbdgzeFmAqxb_gCOfV9d65uXg1ZhLN',
-  },
-  {
-    title: 'Tomb Raider Trilogy',
-    studio: 'Crystal Dynamics • 2013–2018',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBEfhybRESbFss8JPjXb6n8gu9yhEng4tmWMxO66CaYw7DDkl8PR6RzJUOT9y3CLO5rAuaDZp4o_3lwVFE75b4Db1oE02EZuVBEyDlzcgfcfki26kYgeEBpUJ1Xlg59sEDhGtez-eVJ5Avej9BvW3fWgDS0Ba9tIVmEUSr9RwHyWUCPgVi8uqh6VHc3G50H45rQ4olhlzyBN0Wck_9W17E6EQQBwqCtIEFXf1PzMoe4u621Aa6MGMH1',
+    title: 'God of War Ragnarök',
+    year: '2026',
+    img: '/games/god-of-war-ragnarok.webp',
   },
   {
     title: 'Grand Theft Auto V',
-    studio: 'Rockstar Games • 2013',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBLqmiJJG-hEG0obKFyyy62-7yyUWUHcQMSYuWRB8k8DPlrK9ZEbxyB0ZwBnDqk6JK93IYtzlHcVfrU6jLPQ-L3pcf9lgB0fhN3ucFllFT9En9zE18I74KLbiiATnscwQzY6VbtuScD9vZE7Xtv3XsF3M6Wa5IqUVmXRs7qXumiv7dZn6n5UwQHdsBri93CbNJFH14Ay_UUNahmMcpd0DucxviJpt9TUmxuPxqRRdj6MMp0aO6J9tA6',
+    year: '2026',
+    img: '/games/gta-5.webp',
   },
   {
-    title: 'inFAMOUS First Light',
-    studio: 'Sucker Punch • 2014',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9zNnf8cgWykE7x_UsC561vD8s9By655CPouLh-9EDrEPf5zgPrYeaJPaxdpqG9BtFXV7sHQOq2j2Q5RHbtHvOmlh10YtkuI5RXaQFmkXHxTclw4UcRG2iZtk12dlkmO93N8dPEGK0hfSy3GVATDpi94kitcyp0wzTzass9XJ8hfmePyoaPqlUbRn7WxQ7TD9VEam7roeYnVggCJgfl03zyZolxCA6wvk7J3DMdLmpjOKYfPFlBT21',
+    title: 'Tomb Raider (2013)',
+    year: '2026',
+    img: '/games/tomb-raider-2013.webp',
+  },
+  {
+    title: 'Rise of the Tomb Raider',
+    year: '2026',
+    img: '/games/rise-of-the-tomb-raider.webp',
+  },
+  {
+    title: 'Shadow of the Tomb Raider',
+    year: '2026',
+    img: '/games/shadow-of-the-tomb-raider.webp',
+  },
+  {
+    title: 'The Last of Us Part I',
+    year: '2025',
+    img: '/games/last-of-us-1.webp',
   },
 ];
 ---
@@ -36,18 +46,283 @@ const games = [
       <h2 class="text-[24px] leading-[32px] tracking-[-0.02em] font-semibold text-text-primary">Games I Have Played</h2>
     </div>
   </div>
-  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-3.5">
-    {games.map(game => (
-      <div class="group flex flex-col gap-2">
-        <div class="relative aspect-[3/4] rounded-lg overflow-hidden bg-neutral-900 border border-neutral-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.14)] group-hover:-translate-y-1 transition-all duration-200">
-          <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={game.title} src={game.img} />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+  <!-- Interactive Games List with Gliding Background Bar and Separating Lines -->
+  <div id="games-list-wrapper" class="relative flex flex-col border-t border-neutral-200/80">
+    <!-- Smooth Gliding Dark Highlight Bar (Flat, No rounded, No shadow, Pure dark color) -->
+    <div
+      id="games-hover-pill"
+      class="absolute left-0 right-0 bg-[#171717] pointer-events-none opacity-0 z-0"
+      style="will-change: transform, opacity;"
+    ></div>
+
+    {games.map((game) => (
+      <div
+        class="group game-row relative z-10 flex items-center justify-between py-4 px-3 sm:px-4 border-b border-neutral-200/80 cursor-pointer select-none"
+        data-img={game.img}
+        data-title={game.title}
+      >
+        <div class="flex items-center gap-3">
+          <span class="game-title text-[15px] sm:text-[16px] font-semibold text-text-primary">
+            {game.title}
+          </span>
         </div>
-        <div class="flex flex-col">
-          <h3 class="text-[13px] sm:text-[14px] font-semibold leading-tight text-text-primary group-hover:text-black transition-colors">{game.title}</h3>
-          <span class="text-[12px] text-text-muted">{game.studio}</span>
+        <div class="flex items-center gap-3">
+          <span class="game-year text-[13px] font-mono font-medium text-text-muted">
+            {game.year}
+          </span>
+          <span class="game-arrow material-symbols-outlined text-[15px] text-text-muted opacity-0">
+            arrow_forward
+          </span>
         </div>
       </div>
     ))}
   </div>
+
+  <!-- Floating Image Preview Card -->
+  <div
+    id="game-floating-card"
+    class="pointer-events-none fixed top-0 left-0 z-50 w-[170px] sm:w-[195px] aspect-[3/4] rounded-xl overflow-hidden shadow-[0_20px_40px_-8px_rgba(0,0,0,0.28),0_6px_14px_rgba(0,0,0,0.12)] border-[2.5px] border-white bg-neutral-900 opacity-0"
+    style="will-change: transform, opacity;"
+  >
+    <img
+      id="game-floating-img"
+      src=""
+      alt="Game preview"
+      class="w-full h-full object-cover"
+    />
+  </div>
 </section>
+
+<style>
+  .game-row .game-title,
+  .game-row .game-year,
+  .game-row .game-arrow {
+    transition: color 150ms ease, opacity 150ms ease, transform 150ms ease;
+  }
+
+  .game-row:hover .game-title,
+  .game-row[data-active="true"] .game-title {
+    color: #ffffff;
+  }
+
+  .game-row:hover .game-year,
+  .game-row[data-active="true"] .game-year {
+    color: #d4d4d4;
+  }
+
+  .game-row:hover .game-arrow,
+  .game-row[data-active="true"] .game-arrow {
+    opacity: 1;
+    transform: translateX(3px);
+    color: #ffffff;
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+
+  function setupGameHover() {
+    const wrapper = document.getElementById('games-list-wrapper');
+    const hoverPill = document.getElementById('games-hover-pill');
+    const floatingCard = document.getElementById('game-floating-card');
+    const floatingImg = document.getElementById('game-floating-img') as HTMLImageElement;
+    const rows = document.querySelectorAll<HTMLElement>('.game-row');
+
+    if (!wrapper || !hoverPill || !floatingCard || !floatingImg || rows.length === 0) return;
+
+    // Avoid duplicate initialization on the same wrapper
+    if (wrapper.dataset.hoverInitialized === 'true') return;
+    wrapper.dataset.hoverInitialized = 'true';
+
+    // Preload game images for instantaneous display without network lag
+    rows.forEach((row) => {
+      const src = row.dataset.img;
+      if (src) {
+        const img = new Image();
+        img.src = src;
+      }
+    });
+
+    let isHovering = false;
+    let isCardVisible = false;
+    let pillActive = false;
+    let lastX = 0;
+    let tiltTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    // Initial setup for the floating preview card
+    gsap.set(floatingCard, {
+      opacity: 0,
+      scale: 0.92,
+      x: 0,
+      y: 0,
+      rotation: 0,
+      transformOrigin: 'center center',
+    });
+
+    const setCardX = gsap.quickTo(floatingCard, 'x', { duration: 0.18, ease: 'power2.out' });
+    const setCardY = gsap.quickTo(floatingCard, 'y', { duration: 0.18, ease: 'power2.out' });
+    const setCardRotate = gsap.quickTo(floatingCard, 'rotation', { duration: 0.22, ease: 'power2.out' });
+
+    function calculateTargetPosition(e: MouseEvent) {
+      const cardWidth = 195;
+      const cardHeight = 260;
+      const offsetX = 20;
+      const offsetY = -120;
+
+      let x = e.clientX + offsetX;
+      let y = e.clientY + offsetY;
+
+      // Keep within viewport horizontal bounds
+      if (x + cardWidth > window.innerWidth - 16) {
+        x = e.clientX - cardWidth - offsetX;
+      }
+      if (x < 16) x = 16;
+
+      // Keep within viewport vertical bounds
+      if (y + cardHeight > window.innerHeight - 16) {
+        y = window.innerHeight - cardHeight - 16;
+      }
+      if (y < 16) y = 16;
+
+      return { x, y };
+    }
+
+    function setActiveRow(activeRow: HTMLElement | null) {
+      rows.forEach((row) => {
+        if (row === activeRow) {
+          row.setAttribute('data-active', 'true');
+        } else {
+          row.removeAttribute('data-active');
+        }
+      });
+    }
+
+    function hideHover() {
+      if (!isHovering && !pillActive) return;
+
+      isHovering = false;
+      pillActive = false;
+      isCardVisible = false;
+
+      setActiveRow(null);
+
+      // Fast, clean hide for the gliding pill
+      gsap.to(hoverPill, {
+        opacity: 0,
+        duration: 0.16,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+
+      // Smooth exit for the floating preview card
+      gsap.to(floatingCard, {
+        opacity: 0,
+        scale: 0.92,
+        duration: 0.16,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+    }
+
+    // Attach listeners to rows
+    rows.forEach((row) => {
+      row.addEventListener('mouseenter', (e) => {
+        isHovering = true;
+        setActiveRow(row);
+
+        const imgSrc = row.dataset.img || '';
+        const rowTop = row.offsetTop;
+        const rowHeight = row.offsetHeight;
+
+        // Apply height directly without animating height property (prevents reflow jank)
+        hoverPill.style.height = `${rowHeight}px`;
+
+        if (!pillActive) {
+          // Snap position instantly on first appearance, then fade in
+          gsap.set(hoverPill, { y: rowTop });
+          gsap.to(hoverPill, {
+            opacity: 1,
+            duration: 0.16,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          });
+          pillActive = true;
+        } else {
+          // Responsive, fluid glide between rows (only transforms y, 60fps/120fps GPU accelerated)
+          gsap.to(hoverPill, {
+            y: rowTop,
+            opacity: 1,
+            duration: 0.18,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          });
+        }
+
+        // Update preview image
+        if (floatingImg.src !== imgSrc && imgSrc) {
+          floatingImg.src = imgSrc;
+        }
+
+        const { x, y } = calculateTargetPosition(e);
+        lastX = x;
+
+        if (!isCardVisible) {
+          gsap.set(floatingCard, { x, y, rotation: 0 });
+          gsap.to(floatingCard, {
+            opacity: 1,
+            scale: 1,
+            duration: 0.18,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          });
+          isCardVisible = true;
+        } else {
+          setCardX(x);
+          setCardY(y);
+        }
+      });
+
+      row.addEventListener('mousemove', (e) => {
+        const { x, y } = calculateTargetPosition(e);
+
+        const deltaX = e.movementX || (x - lastX);
+        lastX = x;
+        const tilt = Math.max(-7, Math.min(7, deltaX * 0.35));
+
+        setCardX(x);
+        setCardY(y);
+        setCardRotate(tilt);
+
+        if (tiltTimeout) clearTimeout(tiltTimeout);
+        tiltTimeout = setTimeout(() => {
+          setCardRotate(0);
+        }, 60);
+      });
+    });
+
+    // Handle mouse leaving the wrapper directly
+    wrapper.addEventListener('mouseleave', hideHover);
+    wrapper.addEventListener('pointerleave', hideHover);
+
+    // Global listeners to ensure hover never gets stuck:
+    // 1. Moving pointer anywhere outside wrapper immediately hides the hover effect
+    document.addEventListener('pointermove', (e) => {
+      if (!isHovering) return;
+      const target = e.target as Node | null;
+      if (target && !wrapper.contains(target)) {
+        hideHover();
+      }
+    });
+
+    // 2. Cursor leaving the document/window
+    document.addEventListener('mouseleave', hideHover);
+
+    // 3. Tab switch or window blur
+    window.addEventListener('blur', hideHover);
+  }
+
+  // Run on initial load and on Astro client navigation
+  setupGameHover();
+  document.addEventListener('astro:page-load', setupGameHover);
+</script>

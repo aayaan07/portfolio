@@ -1,0 +1,1217 @@
+---
+// src/components/ForestFooter.astro
+interface Props {
+  height?: string;
+  dotSize?: number;
+}
+
+const { height = "560px", dotSize = 3 } = Astro.props;
+---
+
+<div
+  class="forest-footer-art"
+  style={`--forest-height: ${height};`}
+  data-dot-size={dotSize}
+>
+  <canvas
+    class="forest-canvas"
+    aria-label="Interactive monochrome dotted forest with distant pine trees, varied foreground oak and birch trees with visible bark, wildflowers, waving grass, and a realistic stag deer"
+  ></canvas>
+</div>
+
+<style>
+  .forest-footer-art {
+    position: relative;
+    width: 100%;
+    height: var(--forest-height, 560px);
+    background: transparent;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .forest-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<script>
+  const BAYER_8X8 = [
+    [ 0, 32,  8, 40,  2, 34, 10, 42],
+    [48, 16, 56, 24, 50, 18, 58, 26],
+    [12, 44,  4, 36, 14, 46,  6, 38],
+    [60, 28, 52, 20, 62, 30, 54, 22],
+    [ 3, 35, 11, 43,  1, 33,  9, 41],
+    [51, 19, 59, 27, 49, 17, 57, 25],
+    [15, 47,  7, 39, 13, 45,  5, 37],
+    [63, 31, 55, 23, 61, 29, 53, 21]
+  ];
+
+  // Pre-computed monochrome shade LUT (0 = pitch black .. 255 = light grey)
+  const SHADE_LUT: string[] = Array.from({ length: 256 }, (_, i) => `rgb(${i},${i},${i})`);
+
+  function initForestFooter(wrapper: HTMLElement) {
+    if (wrapper.dataset.ready === "true") return;
+    wrapper.dataset.ready = "true";
+
+    const canvas = wrapper.querySelector(".forest-canvas") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d", { alpha: true })!;
+
+    const offCanvas = document.createElement("canvas");
+    const offCtx = offCanvas.getContext("2d", { willReadFrequently: true })!;
+
+    const CELL = Math.max(2, Number(wrapper.dataset.dotSize) || 3);
+    let cols = 0;
+    let rows = 0;
+    let time = 0;
+
+    const pointer = { x: -999, y: -999, vx: 0, vy: 0, active: false };
+
+    // 1. Distant Background Pine Trees (Far away misty silhouette)
+    interface BackPine {
+      x: number;
+      h: number;
+      w: number;
+      tiers: number;
+      sway: number;
+      vSway: number;
+    }
+
+    // 2. Foreground Diverse Woodland Trees (Visible trunk bark + high canopy)
+    interface BranchSpec {
+      startFrac: number; // Where along the trunk the branch splits (0.42..0.75)
+      dx: number;        // Horizontal reach of branch
+      dy: number;        // Vertical reach of branch
+      ctrlX: number;     // Bezier curve control offset
+      ctrlY: number;
+      thick: number;
+    }
+
+    interface LeafPad {
+      ox: number;
+      oy: number;
+      rx: number;
+      ry: number;
+      shade: number;
+    }
+
+    interface FrontTree {
+      x: number;
+      kind: "oak" | "birch" | "scots-pine";
+      h: number;
+      w: number;
+      trunkWidth: number;
+      trunkCurve: number;
+      sway: number;
+      vSway: number;
+      branches: BranchSpec[];
+      foliage: LeafPad[];
+      barkNotches: { yFrac: number; side: number }[];
+    }
+
+    interface Plant {
+      x: number;
+      type: "fern" | "flower" | "bush";
+      size: number;
+      bend: number;
+      vBend: number;
+      hasSeeds: boolean;
+    }
+
+    interface GrassBlade {
+      x: number;
+      h: number;
+      angle: number;
+      vAngle: number;
+      stiff: number;
+      layer: "back" | "front";
+      phase: number;
+    }
+
+    interface Spore {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      shade: number;
+      life: number;
+      maxLife: number;
+    }
+
+    interface PerchedBird {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      treeIdx: number;
+      flying: boolean;
+      wingPhase: number;
+    }
+
+    interface SproutTreat {
+      x: number;
+      growth: number;
+    }
+
+    let backPines: BackPine[] = [];
+    let frontTrees: FrontTree[] = [];
+    let plants: Plant[] = [];
+    let grass: GrassBlade[] = [];
+    let spores: Spore[] = [];
+    let birds: PerchedBird[] = [];
+    let treats: SproutTreat[] = [];
+
+    // 0.85x of previous 2.25 deer scale = 1.91
+    const DEER_SCALE = 1.91;
+    const deer = {
+      x: 120,
+      dir: 1,
+      state: "grazing" as "grazing" | "walking" | "alert" | "trotting",
+      stateTimer: 180,
+      targetX: 180,
+      walkCycle: 0,
+      speed: 0,
+      neckProgress: 1,
+      earFlick: 0,
+      tailFlick: 0,
+      chewPhase: 0
+    };
+
+    function buildForest() {
+      // =========================================================================
+      // 1. DISTANT BACKGROUND PINE TREES (Look far away in misty light-ash grey)
+      // =========================================================================
+      backPines = [];
+      const pineCount = Math.max(10, Math.floor(cols / 28));
+      for (let i = 0; i < pineCount; i++) {
+        const maxH = Math.min(165, rows * 0.78);
+        const h = maxH * (0.52 + Math.sin(i * 1.7) * 0.18 + Math.random() * 0.22);
+        backPines.push({
+          x: (cols / pineCount) * (i + 0.35) + (Math.random() - 0.5) * 14,
+          h,
+          w: h * 0.38,
+          tiers: 5,
+          sway: 0,
+          vSway: 0
+        });
+      }
+
+      // =========================================================================
+      // 2. FOREGROUND VARIED TREES (Oak, Birch, High-Crown Scots Pine)
+      //    Leaves start 45%–58% UP from the ground so gnarled bark is clearly visible!
+      // =========================================================================
+      frontTrees = [];
+      const frontCount = Math.max(5, Math.floor(cols / 64));
+      const kinds: FrontTree["kind"][] = ["oak", "birch", "scots-pine"];
+
+      for (let i = 0; i < frontCount; i++) {
+        const kind = kinds[i % kinds.length];
+        const maxH = Math.min(210, rows * 0.94);
+        const h =
+          kind === "oak"
+            ? maxH * (0.84 + Math.random() * 0.12)
+            : kind === "birch"
+            ? maxH * (0.88 + Math.random() * 0.1)
+            : maxH * (0.8 + Math.random() * 0.14);
+
+        const w = kind === "oak" ? h * 0.68 : kind === "birch" ? h * 0.46 : h * 0.54;
+        const trunkWidth = kind === "oak" ? 11.5 : kind === "birch" ? 6.8 : 8.5;
+        const trunkCurve = (Math.random() - 0.5) * 10;
+
+        const branches: BranchSpec[] = [];
+        const foliage: LeafPad[] = [];
+        const barkNotches: { yFrac: number; side: number }[] = [];
+
+        // Bark texture notches along the lower bare trunk
+        for (let n = 0; n < 7; n++) {
+          barkNotches.push({
+            yFrac: 0.08 + (n / 7) * 0.48,
+            side: n % 2 === 0 ? -1 : 1
+          });
+        }
+
+        if (kind === "oak") {
+          // Broadleaf Oak: Bare trunk rises 46% up, then splits into 4 wide gnarled limbs
+          const limbAngles = [-1, -0.42, 0.42, 1];
+          for (const la of limbAngles) {
+            const startFrac = 0.44 + Math.abs(la) * 0.06;
+            const dx = la * w * 0.46;
+            const dy = -h * (0.28 + (1 - Math.abs(la)) * 0.12);
+            branches.push({
+              startFrac,
+              dx,
+              dy,
+              ctrlX: dx * 0.55,
+              ctrlY: dy * 0.25,
+              thick: trunkWidth * (0.48 - Math.abs(la) * 0.1)
+            });
+
+            // Billowy rounded leaf clusters perched high at the end of each limb
+            foliage.push({
+              ox: dx * 0.95,
+              oy: -h * startFrac + dy,
+              rx: w * (0.24 + Math.random() * 0.05),
+              ry: h * (0.14 + Math.random() * 0.03),
+              shade: 54 + Math.floor(Math.random() * 18)
+            });
+          }
+          // High central crown clusters
+          foliage.push(
+            { ox: 0, oy: -h * 0.84, rx: w * 0.34, ry: h * 0.17, shade: 48 },
+            { ox: -w * 0.2, oy: -h * 0.75, rx: w * 0.26, ry: h * 0.15, shade: 64 },
+            { ox: w * 0.2, oy: -h * 0.75, rx: w * 0.26, ry: h * 0.15, shade: 58 }
+          );
+        } else if (kind === "birch") {
+          // Tall Slender Birch / Aspen: Bare trunk for bottom 48%, delicate ascending limbs & airy pads
+          const limbOffsets = [-0.85, -0.35, 0.35, 0.85, 0];
+          for (const lo of limbOffsets) {
+            const startFrac = 0.46 + (1 - Math.abs(lo)) * 0.14;
+            const dx = lo * w * 0.45;
+            const dy = -h * (0.26 + (1 - Math.abs(lo)) * 0.12);
+            branches.push({
+              startFrac,
+              dx,
+              dy,
+              ctrlX: dx * 0.35,
+              ctrlY: dy * 0.6,
+              thick: trunkWidth * 0.42
+            });
+            foliage.push({
+              ox: dx,
+              oy: -h * startFrac + dy,
+              rx: w * 0.24,
+              ry: h * 0.11,
+              shade: 68 + Math.floor(Math.random() * 20)
+            });
+          }
+        } else {
+          // Old-Growth High-Crown Scots Pine: Winding bare trunk for bottom 52%, flat horizontal needle pads
+          const padLevels = [
+            { sf: 0.52, dir: -1, reach: 0.44 },
+            { sf: 0.58, dir: 1, reach: 0.46 },
+            { sf: 0.68, dir: -0.75, reach: 0.36 },
+            { sf: 0.74, dir: 0.75, reach: 0.36 },
+            { sf: 0.84, dir: 0, reach: 0 }
+          ];
+          for (const pl of padLevels) {
+            const dx = pl.dir * w * pl.reach;
+            const dy = -h * 0.12;
+            branches.push({
+              startFrac: pl.sf,
+              dx,
+              dy,
+              ctrlX: dx * 0.65,
+              ctrlY: 2,
+              thick: trunkWidth * 0.44
+            });
+            foliage.push({
+              ox: dx,
+              oy: -h * pl.sf + dy,
+              rx: w * (pl.dir === 0 ? 0.34 : 0.26),
+              ry: h * 0.075, // Flatter bonsai/cypress pad silhouette
+              shade: 44 + Math.floor(Math.random() * 18)
+            });
+          }
+        }
+
+        frontTrees.push({
+          x: (cols / frontCount) * (i + 0.5) + (Math.random() - 0.5) * 20,
+          kind,
+          h,
+          w,
+          trunkWidth,
+          trunkCurve,
+          sway: 0,
+          vSway: 0,
+          branches,
+          foliage,
+          barkNotches
+        });
+      }
+
+      // 3. Birds Perched High in the Foreground Trees
+      birds = [];
+      for (let i = 0; i < frontTrees.length; i++) {
+        const t = frontTrees[i];
+        birds.push({
+          x: t.x + (Math.random() - 0.5) * 14,
+          y: rows - t.h * 0.74,
+          vx: 0,
+          vy: 0,
+          treeIdx: i,
+          flying: false,
+          wingPhase: Math.random() * Math.PI * 2
+        });
+      }
+
+      // 4. 1.5x Larger Forest Plants & Wildflowers
+      plants = [];
+      const plantCount = Math.max(14, Math.floor(cols / 19));
+      const types: Plant["type"][] = ["fern", "flower", "bush"];
+      for (let i = 0; i < plantCount; i++) {
+        const type = types[i % 3];
+        plants.push({
+          x: (cols / plantCount) * (i + 0.5) + (Math.random() - 0.5) * 10,
+          type,
+          size: (9 + Math.random() * 6) * 1.5,
+          bend: 0,
+          vBend: 0,
+          hasSeeds: type === "flower"
+        });
+      }
+
+      // 5. Meadow Grass (Original height: 7..17 cells)
+      grass = [];
+      const bladeCount = Math.floor(cols * 1.75);
+      for (let i = 0; i < bladeCount; i++) {
+        const isFront = i % 3 === 0;
+        grass.push({
+          x: (i / bladeCount) * cols + (Math.random() - 0.5) * 1.5,
+          h: (isFront ? 10 : 7) + Math.random() * 7,
+          angle: 0,
+          vAngle: 0,
+          stiff: 0.08 + Math.random() * 0.05,
+          layer: isFront ? "front" : "back",
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+
+      deer.x = cols * 0.36;
+      deer.targetX = cols * 0.64;
+    }
+
+    function resize() {
+      const rect = wrapper.getBoundingClientRect();
+      const w = Math.max(300, Math.floor(rect.width));
+      const h = Math.max(320, Math.floor(rect.height));
+      canvas.width = w;
+      canvas.height = h;
+      cols = Math.floor(w / CELL);
+      rows = Math.floor(h / CELL);
+      offCanvas.width = cols;
+      offCanvas.height = rows;
+      buildForest();
+    }
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(wrapper);
+    resize();
+
+    function spawnSpores(x: number, y: number, count: number, shade = 20) {
+      for (let i = 0; i < count; i++) {
+        spores.push({
+          x: x + (Math.random() - 0.5) * 6,
+          y: y + (Math.random() - 0.5) * 6,
+          vx: (Math.random() - 0.3) * 0.45,
+          vy: -0.25 - Math.random() * 0.4,
+          shade,
+          life: 0,
+          maxLife: 45 + Math.random() * 40
+        });
+      }
+    }
+
+    // Pointer Interactions
+    canvas.addEventListener("pointermove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = (e.clientX - rect.left) / CELL;
+      const cy = (e.clientY - rect.top) / CELL;
+      pointer.vx = cx - pointer.x;
+      pointer.vy = cy - pointer.y;
+      pointer.x = cx;
+      pointer.y = cy;
+      pointer.active = true;
+
+      const groundY = rows - 4;
+
+      // 1. Shake Foreground Tree Canopies & Scatter Perched Birds
+      for (let i = 0; i < frontTrees.length; i++) {
+        const t = frontTrees[i];
+        if (Math.abs(cx - t.x) < t.w * 0.55 && cy > groundY - t.h && cy < groundY - t.h * 0.4) {
+          t.vSway += Math.max(-0.35, Math.min(0.35, pointer.vx * 0.035));
+          if (Math.hypot(pointer.vx, pointer.vy) > 1.8) {
+            spawnSpores(cx, cy, 1, 50);
+            for (const b of birds) {
+              if (!b.flying && b.treeIdx === i) {
+                b.flying = true;
+                b.vx = (Math.random() > 0.5 ? 1 : -1) * (0.42 + Math.random() * 0.3);
+                b.vy = -0.42 - Math.random() * 0.25;
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Gentle sway on Distant Background Pines
+      for (const bp of backPines) {
+        if (Math.abs(cx - bp.x) < bp.w * 0.5 && cy > groundY - bp.h) {
+          bp.vSway += Math.max(-0.2, Math.min(0.2, pointer.vx * 0.02));
+        }
+      }
+
+      // 3. Sweep 1.5x Flowers/Plants & Release Dandelion Spores
+      for (const p of plants) {
+        if (Math.abs(cx - p.x) < 12 && cy > groundY - p.size - 8) {
+          p.vBend += Math.max(-0.4, Math.min(0.4, pointer.vx * 0.045));
+          if (p.hasSeeds && Math.abs(pointer.vx) > 0.8 && Math.random() < 0.45) {
+            spawnSpores(p.x, groundY - p.size, 3, 12);
+          }
+        }
+      }
+
+      // 4. Sweep Meadow Grass
+      for (const g of grass) {
+        const dx = Math.abs(g.x - cx);
+        if (dx < 10 && cy > groundY - g.h - 6) {
+          g.vAngle += Math.max(-0.4, Math.min(0.4, pointer.vx * 0.05 * (1 - dx / 10)));
+        }
+      }
+
+      const nearDeer = Math.abs(cx - deer.x) < 26 && cy > groundY - 54;
+      canvas.style.cursor = nearDeer ? "pointer" : "default";
+    });
+
+    canvas.addEventListener("pointerleave", () => {
+      pointer.active = false;
+    });
+
+    canvas.addEventListener("pointerdown", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = (e.clientX - rect.left) / CELL;
+      const cy = (e.clientY - rect.top) / CELL;
+      const groundY = rows - 4;
+
+      // 1. Click on the Stag -> playful bounding trot
+      if (Math.abs(cx - deer.x) < 26 && cy > groundY - 54) {
+        deer.state = "trotting";
+        const jumpDir = deer.x < cols * 0.5 ? 1 : -1;
+        deer.dir = jumpDir;
+        deer.targetX = Math.max(45, Math.min(cols - 45, deer.x + jumpDir * (55 + Math.random() * 45)));
+        deer.earFlick = 1;
+        deer.tailFlick = 1;
+        spawnSpores(deer.x, groundY - 8, 8, 15);
+        return;
+      }
+
+      // 2. Click on the Meadow -> sprout a plant that calls the deer over to graze
+      if (cy > groundY - 55) {
+        const clampedX = Math.max(40, Math.min(cols - 40, cx));
+        treats.push({ x: clampedX, growth: 0.1 });
+        const mouthReach = 14.5 * DEER_SCALE;
+        deer.targetX = clampedX - (clampedX > deer.x ? mouthReach : -mouthReach);
+        deer.dir = clampedX >= deer.x ? 1 : -1;
+        deer.state = "walking";
+        spawnSpores(clampedX, groundY - 4, 5, 20);
+      }
+    });
+
+    // Draw Distant Background Pine Tree (Far-off misty silhouette: Shade 148..168, low opacity)
+    function drawBackPine(c: CanvasRenderingContext2D, bp: BackPine, groundY: number) {
+      // Faint distant trunk
+      c.strokeStyle = "rgba(140, 140, 148, 0.45)";
+      c.lineWidth = 3.2;
+      c.beginPath();
+      c.moveTo(bp.x, groundY);
+      c.lineTo(bp.x + bp.sway, groundY - bp.h * 0.4);
+      c.stroke();
+
+      // Misty conical pine tiers
+      for (let i = 0; i < bp.tiers; i++) {
+        const frac = i / bp.tiers;
+        const tierSway = bp.sway * (1 + i * 0.8);
+        const topY = groundY - bp.h + (1 - (i + 1) / bp.tiers) * (bp.h * 0.78);
+        const botY = groundY - bp.h * 0.14 - frac * (bp.h * 0.62);
+        const halfW = bp.w * (0.55 - frac * 0.34);
+
+        const grad = c.createLinearGradient(bp.x, topY, bp.x, botY);
+        grad.addColorStop(0, "rgba(148, 148, 156, 0.46)");
+        grad.addColorStop(1, "rgba(168, 168, 175, 0.18)");
+
+        c.fillStyle = grad;
+        c.beginPath();
+        c.moveTo(bp.x + tierSway * 1.2, topY);
+        c.lineTo(bp.x + halfW + tierSway * 0.6, botY);
+        c.lineTo(bp.x - halfW + tierSway * 0.6, botY);
+        c.closePath();
+        c.fill();
+      }
+    }
+
+    // Draw Foreground Woodland Tree (Oak, Birch, or High-Crown Scots Pine)
+    // Features flared roots, textured bark trunk, exposed limbs, and high foliage starting ~50% up!
+    function drawFrontTree(c: CanvasRenderingContext2D, t: FrontTree, groundY: number) {
+      const crownHeight = t.h * 0.56;
+      const topTrunkX = t.x + t.trunkCurve + t.sway * 1.5;
+      const topTrunkY = groundY - crownHeight;
+      const midTrunkX = t.x + t.trunkCurve * 0.45 + t.sway * 0.5;
+      const midTrunkY = groundY - crownHeight * 0.5;
+
+      // Helper to evaluate trunk X at any vertical fraction (0 = ground, 0.56 = crown fork)
+      function getTrunkPos(frac: number) {
+        const u = Math.min(1, frac / 0.56);
+        const inv = 1 - u;
+        const x =
+          inv * inv * t.x +
+          2 * inv * u * midTrunkX +
+          u * u * topTrunkX;
+        const y = groundY - t.h * frac;
+        return { x, y };
+      }
+
+      // 1. Sculpted Tree Trunk with Root Flare & Two-Tone Bark Shading
+      const baseW = t.trunkWidth;
+      const topW = t.trunkWidth * 0.42;
+
+      // Main Bark Fill (Birch has lighter silver-grey bark with dark rim; Oak/Scots have deep charcoal bark)
+      const barkShade = t.kind === "birch" ? 88 : 26;
+      c.fillStyle = `rgba(${barkShade}, ${barkShade}, ${barkShade}, 0.96)`;
+      c.beginPath();
+      // Left flared root up to crown fork
+      c.moveTo(t.x - baseW * 0.85, groundY);
+      c.quadraticCurveTo(midTrunkX - baseW * 0.38, midTrunkY, topTrunkX - topW * 0.5, topTrunkY);
+      c.lineTo(topTrunkX + topW * 0.5, topTrunkY);
+      // Right side down to flared root
+      c.quadraticCurveTo(midTrunkX + baseW * 0.38, midTrunkY, t.x + baseW * 0.85, groundY);
+      c.closePath();
+      c.fill();
+
+      // Deep Shadow Bark Edge on Right Side of Trunk for 3D cylindrical volume
+      c.strokeStyle = "rgba(8, 8, 10, 0.98)";
+      c.lineWidth = t.kind === "birch" ? 1.6 : 2.2;
+      c.beginPath();
+      c.moveTo(t.x + baseW * 0.75, groundY);
+      c.quadraticCurveTo(midTrunkX + baseW * 0.34, midTrunkY, topTrunkX + topW * 0.45, topTrunkY);
+      c.stroke();
+
+      // Horizontal Bark Notches (Lenticels on Birch, Craggy Bark Ridges on Oak/Pine)
+      c.strokeStyle = "rgba(6, 6, 8, 0.95)";
+      c.lineWidth = t.kind === "birch" ? 1.4 : 1.1;
+      for (const bn of t.barkNotches) {
+        const pos = getTrunkPos(bn.yFrac);
+        const wAtY = baseW * (1 - bn.yFrac) * 0.42;
+        c.beginPath();
+        c.moveTo(pos.x + bn.side * wAtY * 0.2, pos.y);
+        c.lineTo(pos.x + bn.side * wAtY * 0.95, pos.y + (t.kind === "birch" ? 0 : 3.5));
+        c.stroke();
+      }
+
+      // 2. Exposed Primary Boughs / Branches Reaching Out Beneath & Into the High Canopy
+      c.lineCap = "round";
+      for (const br of t.branches) {
+        const origin = getTrunkPos(br.startFrac);
+        const endX = t.x + br.dx + t.sway * 2.4;
+        const endY = groundY - t.h * br.startFrac + br.dy;
+        const ctrlX = origin.x + br.ctrlX + t.sway * 1.2;
+        const ctrlY = origin.y + br.ctrlY;
+
+        c.strokeStyle = `rgba(${barkShade - 6}, ${barkShade - 6}, ${barkShade - 6}, 0.96)`;
+        c.lineWidth = br.thick;
+        c.beginPath();
+        c.moveTo(origin.x, origin.y);
+        c.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        c.stroke();
+
+        // Secondary forked twigs at branch tips
+        c.lineWidth = br.thick * 0.55;
+        c.beginPath();
+        c.moveTo(endX, endY);
+        c.lineTo(endX + (br.dx >= 0 ? 7 : -7), endY - 6);
+        c.moveTo(endX, endY);
+        c.lineTo(endX + (br.dx >= 0 ? -4 : 4), endY - 8);
+        c.stroke();
+      }
+
+      // 3. High Canopy Leaf Clusters (Starting well above the ground!)
+      for (const pad of t.foliage) {
+        const px = t.x + pad.ox + t.sway * 2.6;
+        const py = groundY + pad.oy;
+        const sh = pad.shade;
+
+        // Soft dithered leaf cluster with darker underside and lighter sunlit top
+        const grad = c.createRadialGradient(
+          px - pad.rx * 0.15,
+          py - pad.ry * 0.25,
+          2,
+          px,
+          py,
+          Math.max(pad.rx, pad.ry)
+        );
+        grad.addColorStop(0, `rgba(${sh + 16}, ${sh + 16}, ${sh + 16}, 0.88)`);
+        grad.addColorStop(0.65, `rgba(${sh}, ${sh}, ${sh}, 0.78)`);
+        grad.addColorStop(1, `rgba(${sh - 14}, ${sh - 14}, ${sh - 14}, 0)`);
+
+        c.fillStyle = grad;
+        c.beginPath();
+        c.ellipse(px, py, pad.rx, pad.ry, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+
+    // Draw 1.5x Larger Botanical Plants (Ferns, Multi-Petal Wildflowers, Berry Shrubs)
+    function drawPlant(c: CanvasRenderingContext2D, p: Plant, groundY: number) {
+      c.save();
+      c.translate(p.x, groundY);
+
+      if (p.type === "fern") {
+        c.strokeStyle = "rgba(28, 28, 32, 0.92)";
+        c.lineWidth = 1.35;
+        for (let f = -2; f <= 2; f++) {
+          const angle = f * 0.34 + p.bend;
+          const len = p.size * (1 - Math.abs(f) * 0.15);
+          const tipX = Math.sin(angle) * len;
+          const tipY = -Math.cos(angle) * len;
+          c.beginPath();
+          c.moveTo(0, 0);
+          c.quadraticCurveTo(tipX * 0.5, tipY * 0.8, tipX, tipY);
+          c.stroke();
+
+          c.fillStyle = "rgba(22, 22, 26, 0.9)";
+          for (let l = 0.3; l <= 0.88; l += 0.2) {
+            c.fillRect(tipX * l - 2.1, tipY * l - 0.8, 4.2, 1.6);
+          }
+        }
+      } else if (p.type === "flower") {
+        const tipX = Math.sin(p.bend) * p.size;
+        const tipY = -Math.cos(p.bend) * p.size;
+
+        c.globalCompositeOperation = "destination-out";
+        c.fillStyle = "rgba(0, 0, 0, 0.75)";
+        c.beginPath();
+        c.arc(tipX, tipY, 6.8, 0, Math.PI * 2);
+        c.fill();
+        c.globalCompositeOperation = "source-over";
+
+        c.strokeStyle = "rgba(32, 32, 36, 0.94)";
+        c.lineWidth = 1.45;
+        c.beginPath();
+        c.moveTo(0, 0);
+        c.quadraticCurveTo(tipX * 0.4, tipY * 0.6, tipX, tipY);
+        c.moveTo(tipX * 0.35, tipY * 0.45);
+        c.lineTo(tipX * 0.35 - 4.5, tipY * 0.45 - 3.5);
+        c.moveTo(tipX * 0.55, tipY * 0.65);
+        c.lineTo(tipX * 0.55 + 4.5, tipY * 0.65 - 3.5);
+        c.stroke();
+
+        c.fillStyle = "rgba(10, 10, 12, 0.98)";
+        for (let a = 0; a < 5; a++) {
+          const ang = (a / 5) * Math.PI * 2 + time * 0.2;
+          const px = tipX + Math.cos(ang) * 3.2;
+          const py = tipY + Math.sin(ang) * 3.2;
+          c.beginPath();
+          c.arc(px, py, 2.4, 0, Math.PI * 2);
+          c.fill();
+        }
+        c.globalCompositeOperation = "destination-out";
+        c.beginPath();
+        c.arc(tipX, tipY, 1.5, 0, Math.PI * 2);
+        c.fill();
+        c.globalCompositeOperation = "source-over";
+      } else {
+        const g = c.createRadialGradient(
+          p.bend * 2,
+          -p.size * 0.4,
+          1,
+          0,
+          -p.size * 0.38,
+          p.size * 0.85
+        );
+        g.addColorStop(0, "rgba(48, 48, 54, 0.86)");
+        g.addColorStop(1, "rgba(68, 68, 76, 0)");
+        c.fillStyle = g;
+        c.beginPath();
+        c.arc(p.bend * 1.5, -p.size * 0.38, p.size * 0.85, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = "rgba(6, 6, 8, 0.98)";
+        c.beginPath();
+        c.arc(-3.5, -p.size * 0.52, 1.8, 0, Math.PI * 2);
+        c.arc(2.5, -p.size * 0.38, 1.8, 0, Math.PI * 2);
+        c.arc(-0.5, -p.size * 0.25, 1.8, 0, Math.PI * 2);
+        c.fill();
+      }
+
+      c.restore();
+    }
+
+    // Update & Draw Anatomically Realistic Stag Deer (at 0.85x = 1.91 Scale)
+    function updateAndDrawDeer(c: CanvasRenderingContext2D, groundY: number) {
+      deer.stateTimer--;
+      deer.earFlick *= 0.9;
+      deer.tailFlick *= 0.9;
+
+      const mouthOffset = 15.5 * DEER_SCALE;
+      const distToPointer = pointer.active
+        ? Math.hypot(pointer.x - deer.x, pointer.y - (groundY - 26))
+        : 999;
+
+      if (deer.state === "grazing") {
+        deer.speed = 0;
+        deer.neckProgress += (1 - deer.neckProgress) * 0.08;
+        deer.chewPhase += 0.18;
+
+        const mouthX = deer.x + deer.dir * mouthOffset;
+        if (Math.sin(deer.chewPhase) > 0.5) {
+          for (const g of grass) {
+            if (Math.abs(g.x - mouthX) < 5) {
+              g.vAngle += (Math.random() - 0.5) * 0.28;
+            }
+          }
+        }
+
+        if (Math.random() < 0.015) deer.earFlick = 1;
+        if (Math.random() < 0.02) deer.tailFlick = 1;
+
+        if (distToPointer < 30) {
+          deer.state = "alert";
+          deer.stateTimer = 75;
+          deer.earFlick = 1;
+        } else if (deer.stateTimer <= 0) {
+          deer.targetX = 45 + Math.random() * (cols - 90);
+          deer.dir = deer.targetX >= deer.x ? 1 : -1;
+          deer.state = "walking";
+          deer.stateTimer = 260;
+        }
+      } else if (deer.state === "alert") {
+        deer.speed = 0;
+        deer.neckProgress += (0 - deer.neckProgress) * 0.12;
+        if (pointer.active) {
+          deer.dir = pointer.x >= deer.x ? 1 : -1;
+        }
+        if (distToPointer >= 34 && deer.stateTimer <= 0) {
+          deer.state = "grazing";
+          deer.stateTimer = 150 + Math.random() * 120;
+        }
+      } else if (deer.state === "walking" || deer.state === "trotting") {
+        const isTrot = deer.state === "trotting";
+        const moveSpd = isTrot ? 0.62 : 0.26;
+        deer.speed = moveSpd;
+        deer.neckProgress += (0.05 - deer.neckProgress) * 0.12;
+        deer.walkCycle += isTrot ? 0.24 : 0.13;
+
+        const dx = deer.targetX - deer.x;
+        if (Math.abs(dx) < 3.5) {
+          deer.state = "grazing";
+          deer.stateTimer = 170 + Math.random() * 140;
+          deer.tailFlick = 1;
+          treats = treats.filter((tr) => Math.abs(tr.x - (deer.x + deer.dir * mouthOffset)) > 18);
+        } else {
+          deer.dir = dx >= 0 ? 1 : -1;
+          deer.x += deer.dir * moveSpd;
+        }
+
+        for (const g of grass) {
+          if (Math.abs(g.x - deer.x) < 11) {
+            g.vAngle += deer.dir * 0.06;
+          }
+        }
+      }
+
+      // Draw Realistic Stag Deer (Scale = 1.91, Obsidian Shade 8)
+      c.save();
+      const bodyBounce = deer.speed > 0 ? Math.abs(Math.sin(deer.walkCycle)) * 1.8 : 0;
+      c.translate(deer.x, groundY - bodyBounce);
+      c.scale(deer.dir * DEER_SCALE, DEER_SCALE);
+
+      // 1. Crisp Light Separation Halo around the Stag so it stands out against tree trunks
+      c.globalCompositeOperation = "destination-out";
+      const halo = c.createRadialGradient(2, -15, 6, 2, -15, 24);
+      halo.addColorStop(0, "rgba(0, 0, 0, 0.85)");
+      halo.addColorStop(0.7, "rgba(0, 0, 0, 0.45)");
+      halo.addColorStop(1, "rgba(0, 0, 0, 0)");
+      c.fillStyle = halo;
+      c.beginPath();
+      c.ellipse(3, -15, 25, 22, 0, 0, Math.PI * 2);
+      c.fill();
+      c.globalCompositeOperation = "source-over";
+
+      // 2. Realistic 3-Segment Cervid Hind & Fore Legs
+      function drawHindLeg(hipX: number, hipY: number, phaseOffset: number, isNear: boolean) {
+        const swing = deer.speed > 0 ? Math.sin(deer.walkCycle + phaseOffset) : 0;
+        const lift = deer.speed > 0 ? Math.max(0, -Math.cos(deer.walkCycle + phaseOffset)) * 3.2 : 0;
+
+        const hockX = hipX - 2.2 + swing * 2.2;
+        const hockY = hipY + 6.2 - lift * 0.45;
+        const fetlockX = hipX - 1.2 + swing * 4.2;
+        const hoofY = -lift;
+
+        const shade = isNear ? 8 : 68;
+        c.strokeStyle = `rgba(${shade}, ${shade}, ${shade}, 0.98)`;
+        c.lineCap = "round";
+        c.lineJoin = "round";
+
+        c.lineWidth = isNear ? 2.4 : 1.9;
+        c.beginPath();
+        c.moveTo(hipX, hipY);
+        c.lineTo(hockX, hockY);
+        c.stroke();
+
+        c.lineWidth = isNear ? 1.35 : 1.15;
+        c.beginPath();
+        c.moveTo(hockX, hockY);
+        c.lineTo(fetlockX, hoofY);
+        c.stroke();
+
+        c.fillStyle = "rgba(4, 4, 6, 1)";
+        c.beginPath();
+        c.moveTo(fetlockX - 0.8, hoofY);
+        c.lineTo(fetlockX + 1.4, hoofY);
+        c.lineTo(fetlockX + 0.5, hoofY - 1.3);
+        c.closePath();
+        c.fill();
+      }
+
+      function drawForeLeg(shoulderX: number, shoulderY: number, phaseOffset: number, isNear: boolean) {
+        const swing = deer.speed > 0 ? Math.sin(deer.walkCycle + phaseOffset) : 0;
+        const lift = deer.speed > 0 ? Math.max(0, -Math.cos(deer.walkCycle + phaseOffset)) * 3.2 : 0;
+
+        const kneeX = shoulderX + 0.4 + swing * 2.5 + (lift > 0.5 ? 1.2 : 0);
+        const kneeY = shoulderY + 5.8 - lift * 0.5;
+        const hoofX = shoulderX + 0.2 + swing * 4.6;
+        const hoofY = -lift;
+
+        const shade = isNear ? 8 : 68;
+        c.strokeStyle = `rgba(${shade}, ${shade}, ${shade}, 0.98)`;
+        c.lineCap = "round";
+
+        c.lineWidth = isNear ? 2.1 : 1.75;
+        c.beginPath();
+        c.moveTo(shoulderX, shoulderY);
+        c.lineTo(kneeX, kneeY);
+        c.stroke();
+
+        c.lineWidth = isNear ? 1.3 : 1.1;
+        c.beginPath();
+        c.moveTo(kneeX, kneeY);
+        c.lineTo(hoofX, hoofY);
+        c.stroke();
+
+        c.fillStyle = "rgba(4, 4, 6, 1)";
+        c.beginPath();
+        c.moveTo(hoofX - 0.8, hoofY);
+        c.lineTo(hoofX + 1.4, hoofY);
+        c.lineTo(hoofX + 0.5, hoofY - 1.3);
+        c.closePath();
+        c.fill();
+      }
+
+      drawHindLeg(-7.2, -11.2, Math.PI, false);
+      drawForeLeg(6.0, -11.0, 0, false);
+
+      // 3. Sculpted Stag Torso
+      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      c.beginPath();
+      c.moveTo(-9.8, -12.5);
+      c.bezierCurveTo(-8.5, -16.2, -4.5, -16.0, -1.0, -15.4);
+      c.bezierCurveTo(2.5, -15.0, 5.2, -16.8, 7.6, -15.8);
+      c.bezierCurveTo(10.2, -14.2, 10.4, -10.2, 8.2, -8.8);
+      c.bezierCurveTo(4.5, -8.2, 0.5, -8.8, -3.5, -9.8);
+      c.bezierCurveTo(-6.2, -10.5, -8.5, -10.2, -9.8, -12.5);
+      c.closePath();
+      c.fill();
+
+      c.fillStyle = "rgba(58, 58, 64, 0.95)";
+      c.beginPath();
+      c.moveTo(-4.0, -9.8);
+      c.quadraticCurveTo(2.0, -8.5, 7.8, -9.0);
+      c.quadraticCurveTo(4.0, -10.3, -4.0, -9.8);
+      c.closePath();
+      c.fill();
+
+      c.globalCompositeOperation = "destination-out";
+      c.fillStyle = "rgba(0, 0, 0, 0.88)";
+      const spots = [
+        [-6.2, -14.0],
+        [-3.4, -14.5],
+        [-0.4, -14.0],
+        [2.6, -14.4],
+        [-4.8, -12.5],
+        [-1.8, -12.6],
+        [1.2, -12.8]
+      ];
+      for (const [sx, sy] of spots) {
+        c.beginPath();
+        c.arc(sx, sy, 0.68, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.globalCompositeOperation = "source-over";
+
+      drawHindLeg(-7.8, -11.0, 0, true);
+      drawForeLeg(6.8, -10.8, Math.PI, true);
+
+      // 4. Tail
+      const tailFlickY = Math.sin(time * 8) * deer.tailFlick * 1.8;
+      c.strokeStyle = "rgba(8, 8, 10, 0.98)";
+      c.lineWidth = 1.8;
+      c.beginPath();
+      c.moveTo(-9.4, -14.0);
+      c.quadraticCurveTo(-11.5, -13.5 + tailFlickY * 0.5, -12.4, -11.8 + tailFlickY);
+      c.stroke();
+
+      // 5. S-Curved Neck, Head, Ears & Multi-Point Antlers
+      const grazeNib = deer.state === "grazing" ? Math.sin(deer.chewPhase) * 0.75 : 0;
+      const p = deer.neckProgress;
+      const headX = 10.2 + p * 5.8;
+      const headY = -24.2 + p * 20.6 + grazeNib;
+
+      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      c.beginPath();
+      c.moveTo(6.0, -15.5);
+      c.quadraticCurveTo(7.8 + p * 3.0, -20.5 + p * 9.5, headX - 1.2, headY - 1.2);
+      c.lineTo(headX + 1.0, headY + 1.4);
+      c.quadraticCurveTo(10.8 + p * 2.2, -17.5 + p * 10.5, 8.6, -10.5);
+      c.closePath();
+      c.fill();
+
+      const headAngle = -0.08 + p * 0.95;
+      c.save();
+      c.translate(headX, headY);
+      c.rotate(headAngle);
+
+      const earWiggle = Math.sin(time * 12) * deer.earFlick * 0.25;
+      c.fillStyle = "rgba(55, 55, 62, 0.96)";
+      c.beginPath();
+      c.moveTo(-0.5, -1.2);
+      c.quadraticCurveTo(-2.2, -5.2, -0.2, -6.0);
+      c.quadraticCurveTo(0.8, -4.0, 0.2, -1.2);
+      c.closePath();
+      c.fill();
+
+      c.save();
+      c.rotate(earWiggle);
+      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      c.beginPath();
+      c.moveTo(-0.8, -0.8);
+      c.quadraticCurveTo(-4.2, -3.8, -3.4, -5.6);
+      c.quadraticCurveTo(-1.2, -4.4, -0.2, -1.2);
+      c.closePath();
+      c.fill();
+      c.restore();
+
+      const chewJaw = deer.state === "grazing" ? Math.max(0, Math.sin(deer.chewPhase * 2)) * 0.45 : 0;
+      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      c.beginPath();
+      c.moveTo(-1.6, -1.0);
+      c.quadraticCurveTo(0.5, -2.4, 2.4, -1.5);
+      c.lineTo(6.4, -0.2);
+      c.quadraticCurveTo(7.0, 0.5, 6.2, 1.3);
+      c.lineTo(2.2, 1.7 + chewJaw);
+      c.quadraticCurveTo(0.0, 2.1, -1.4, 0.8);
+      c.closePath();
+      c.fill();
+
+      c.globalCompositeOperation = "destination-out";
+      c.fillStyle = "rgba(0, 0, 0, 0.95)";
+      c.beginPath();
+      c.arc(1.5, -0.5, 0.65, 0, Math.PI * 2);
+      c.fill();
+      c.globalCompositeOperation = "source-over";
+
+      c.lineCap = "round";
+      c.lineJoin = "round";
+      c.strokeStyle = "rgba(52, 52, 58, 0.95)";
+      c.lineWidth = 1.05;
+      c.beginPath();
+      c.moveTo(0.6, -1.8);
+      c.bezierCurveTo(-1.5, -6.5, 0.5, -10.5, 3.2, -13.2);
+      c.moveTo(0.1, -4.5);
+      c.lineTo(2.8, -6.2);
+      c.moveTo(0.6, -8.5);
+      c.lineTo(-1.5, -11.5);
+      c.stroke();
+
+      c.strokeStyle = "rgba(4, 4, 6, 1)";
+      c.lineWidth = 1.35;
+      c.beginPath();
+      c.moveTo(0.2, -1.6);
+      c.bezierCurveTo(-2.8, -6.2, -1.0, -10.8, 1.8, -13.8);
+      c.stroke();
+
+      c.lineWidth = 1.1;
+      c.beginPath();
+      c.moveTo(-0.6, -3.4);
+      c.quadraticCurveTo(1.8, -4.2, 3.2, -5.8);
+      c.moveTo(-1.3, -6.6);
+      c.quadraticCurveTo(0.8, -7.8, 2.0, -9.6);
+      c.moveTo(-0.5, -9.8);
+      c.lineTo(-2.8, -12.6);
+      c.moveTo(0.5, -11.6);
+      c.lineTo(-0.6, -14.2);
+      c.stroke();
+
+      c.restore();
+      c.restore();
+    }
+
+    function renderLoop() {
+      time += 0.025;
+
+      offCtx.clearRect(0, 0, cols, rows);
+
+      const groundY = rows - 4;
+      const ambientWind = 0.22 + Math.sin(time * 0.9) * 0.18;
+
+      // 1. Far Background Pine Treeline (Misty Ash-Grey Shade 148..168)
+      for (const bp of backPines) {
+        const targetSway = Math.sin(time * 1.2 + bp.x * 0.04) * 0.35 + ambientWind * 0.6;
+        bp.vSway += (targetSway - bp.sway) * 0.05;
+        bp.vSway *= 0.88;
+        bp.sway += bp.vSway;
+        drawBackPine(offCtx, bp, groundY);
+      }
+
+      // 2. Foreground Varied Woodland Trees (Oak, Birch, Scots Pine with visible bark & high canopy)
+      for (const t of frontTrees) {
+        const targetSway = Math.sin(time * 1.4 + t.x * 0.05) * 0.5 + ambientWind;
+        t.vSway += (targetSway - t.sway) * 0.06;
+        t.vSway *= 0.88;
+        t.sway += t.vSway;
+        drawFrontTree(offCtx, t, groundY);
+      }
+
+      // 3. Flying / Startled Forest Birds (Pitch Black Shade 6)
+      for (const b of birds) {
+        if (b.flying) {
+          b.wingPhase += 0.28;
+          b.x += b.vx;
+          b.y += b.vy;
+          b.vy -= 0.004;
+
+          const flap = Math.sin(b.wingPhase) * 3.2;
+          offCtx.strokeStyle = "rgba(6, 6, 8, 0.98)";
+          offCtx.lineWidth = 1.4;
+          offCtx.beginPath();
+          offCtx.moveTo(b.x - 3.6, b.y - flap);
+          offCtx.lineTo(b.x, b.y);
+          offCtx.lineTo(b.x + 3.6, b.y - flap);
+          offCtx.stroke();
+
+          if (b.y < -8 || b.x < -10 || b.x > cols + 10) {
+            const t = frontTrees[b.treeIdx];
+            b.flying = false;
+            b.x = t.x + (Math.random() - 0.5) * 12;
+            b.y = groundY - t.h * 0.74;
+          }
+        }
+      }
+
+      // 4. Back Layer Meadow Grass (Pewter Grey Shade 105) & 1.5x Plants
+      for (const g of grass) {
+        const target = Math.sin(time * 2.2 + g.x * 0.07 + g.phase) * 0.22 + ambientWind * 0.4;
+        g.vAngle += (target - g.angle) * g.stiff;
+        g.vAngle *= 0.86;
+        g.angle += g.vAngle;
+
+        if (g.layer === "back") {
+          offCtx.strokeStyle = "rgba(105, 105, 112, 0.72)";
+          offCtx.lineWidth = 0.95;
+          offCtx.beginPath();
+          offCtx.moveTo(g.x, groundY + 1);
+          offCtx.quadraticCurveTo(
+            g.x + Math.sin(g.angle) * g.h * 0.4,
+            groundY - g.h * 0.5,
+            g.x + Math.sin(g.angle) * g.h,
+            groundY - Math.cos(g.angle) * g.h
+          );
+          offCtx.stroke();
+        }
+      }
+
+      for (const p of plants) {
+        const target = Math.sin(time * 1.8 + p.x * 0.08) * 0.15 + ambientWind * 0.25;
+        p.vBend += (target - p.bend) * 0.08;
+        p.vBend *= 0.86;
+        p.bend += p.vBend;
+        drawPlant(offCtx, p, groundY);
+      }
+
+      // User-clicked Sprouts on the Ground
+      for (const tr of treats) {
+        tr.growth = Math.min(1, tr.growth + 0.06);
+        const h = 14 * tr.growth;
+        offCtx.strokeStyle = "rgba(15, 15, 18, 0.96)";
+        offCtx.lineWidth = 1.4;
+        offCtx.beginPath();
+        offCtx.moveTo(tr.x, groundY);
+        offCtx.lineTo(tr.x, groundY - h);
+        offCtx.stroke();
+        offCtx.fillStyle = "rgba(6, 6, 8, 0.98)";
+        offCtx.beginPath();
+        offCtx.arc(tr.x - 2.8, groundY - h, 2.4, 0, Math.PI * 2);
+        offCtx.arc(tr.x + 2.8, groundY - h, 2.4, 0, Math.PI * 2);
+        offCtx.arc(tr.x, groundY - h - 3.0, 2.4, 0, Math.PI * 2);
+        offCtx.fill();
+      }
+
+      // 5. Realistic Stag Deer (0.85x = 1.91 scale)
+      updateAndDrawDeer(offCtx, groundY);
+
+      // 6. Foreground Meadow Grass Layer (Deep Ink Shade 14, original height)
+      offCtx.fillStyle = "rgba(18, 18, 22, 0.94)";
+      offCtx.fillRect(0, groundY, cols, rows - groundY);
+
+      for (const g of grass) {
+        if (g.layer !== "front") continue;
+        offCtx.strokeStyle = "rgba(14, 14, 18, 0.96)";
+        offCtx.lineWidth = 1.1;
+        offCtx.beginPath();
+        offCtx.moveTo(g.x, groundY + 2);
+        offCtx.quadraticCurveTo(
+          g.x + Math.sin(g.angle) * g.h * 0.45,
+          groundY - g.h * 0.55,
+          g.x + Math.sin(g.angle) * g.h,
+          groundY - Math.cos(g.angle) * g.h
+        );
+        offCtx.stroke();
+      }
+
+      // 7. Floating Monochrome Spores
+      for (let i = spores.length - 1; i >= 0; i--) {
+        const s = spores[i];
+        s.x += s.vx + ambientWind * 0.25;
+        s.y += s.vy + Math.sin(time * 3 + i) * 0.08;
+        s.life++;
+        const alpha = Math.max(0, 1 - s.life / s.maxLife);
+        offCtx.fillStyle = `rgba(${s.shade}, ${s.shade}, ${s.shade}, ${alpha * 0.95})`;
+        offCtx.fillRect(s.x, s.y, 1.6, 1.6);
+        if (s.life >= s.maxLife) spores.splice(i, 1);
+      }
+
+      // 8. Monochrome Shade-Aware Bayer Dither Pass onto Transparent Main Canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const data = offCtx.getImageData(0, 0, cols, rows).data;
+      const dotSize = CELL - 1;
+
+      for (let r = 0; r < rows; r++) {
+        const bayerRow = BAYER_8X8[r & 7];
+        const rowOffset = r * cols * 4;
+        const py = r * CELL;
+
+        for (let c = 0; c < cols; c++) {
+          const idx = rowOffset + c * 4;
+          const alpha = data[idx + 3];
+          if (alpha <= 12) continue;
+
+          const threshold = bayerRow[c & 7] * 4;
+          if (alpha > threshold) {
+            const shade = data[idx];
+            ctx.fillStyle = SHADE_LUT[shade];
+            ctx.fillRect(c * CELL, py, dotSize, dotSize);
+          }
+        }
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    requestAnimationFrame(renderLoop);
+  }
+
+  function bootForestFooters() {
+    document.querySelectorAll<HTMLElement>(".forest-footer-art").forEach(initForestFooter);
+  }
+
+  bootForestFooters();
+  document.addEventListener("astro:page-load", bootForestFooters);
+</script>

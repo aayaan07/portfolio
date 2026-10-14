@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import SkyHeader from '../components/SkyHeader.astro';
 import Hero from '../components/Hero.astro';
 import Stack from '../components/Stack.astro';
 import SelectedWork from '../components/SelectedWork.astro';
@@ -9,11 +10,15 @@ import Snapshots from '../components/Snapshots.astro';
 import Spotify from '../components/Spotify.astro';
 import ContactCTA from '../components/ContactCTA.astro';
 import Footer from '../components/Footer.astro';
+import ForestFooter from '../components/ForestFooter.astro';
 import Animations from '../components/Animations.astro';
 ---
 
 <Layout title="Aayaan Kumar — Software Engineer / Gamer / Editor">
-  <main class="w-full max-w-[760px] mx-auto px-5 md:px-8 pt-[248px] md:pt-[264px] flex-1">
+  <!-- Top Interactive Sky -->
+  <SkyHeader height="190px" dotSize={3} />
+
+  <main class="w-full max-w-[760px] mx-auto px-5 md:px-8 pt-4 sm:pt-6 flex-1">
     <div class="flex flex-col w-full">
       <Hero />
       <Stack />
@@ -25,6 +30,11 @@ import Animations from '../components/Animations.astro';
       <ContactCTA />
     </div>
   </main>
+
   <Footer />
+
+  <!-- Bottom Interactive Forest & Grazing Deer -->
+  <ForestFooter height="270px" dotSize={3} />
+
   <Animations />
 </Layout>
