@@ -1,0 +1,63 @@
+---
+// Contact CTA Section
+---
+
+<section class="my-[4rem] p-[2.5rem] rounded-2xl bg-surface tactile-card border border-neutral-200/70 flex flex-col items-center text-center gap-[1rem] shadow-[0_4px_0_#e5e7eb,0_8px_24px_rgba(0,0,0,0.06)]" data-gsap="cta">
+  <div class="w-12 h-12 rounded-full bg-surface-subtle flex items-center justify-center text-black tactile-pill border border-neutral-200/70">
+    <span class="material-symbols-outlined text-[24px]">send</span>
+  </div>
+  <div class="flex flex-col gap-[0.25rem] max-w-[480px]">
+    <h3 class="text-[24px] leading-[32px] tracking-[-0.02em] font-bold text-text-primary">Let's build something enduring</h3>
+    <p class="text-[15px] leading-[24px] tracking-[-0.005em] text-on-surface-variant">Have an ambitious product idea or want to audit your existing design system? My inbox is always open.</p>
+  </div>
+  <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+    <a class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#171717] text-white text-[13px] leading-[18px] tracking-[0.01em] font-medium border border-neutral-800 tactile-dark-btn hover:bg-black transition-all" href="mailto:kumar.aayaan007@gmail.com">
+      <span class="material-symbols-outlined text-[18px]">alternate_email</span>
+      <span>kumar.aayaan007@gmail.com</span>
+    </a>
+    <button id="cta-copy-email-btn" class="tactile-btn inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white text-text-primary text-[13px] leading-[18px] tracking-[0.01em] font-medium border border-neutral-200 hover:border-neutral-400 transition-all shadow-[0_2px_0_#e5e7eb] cursor-pointer" data-email="kumar.aayaan007@gmail.com" title="Copy email address">
+      <span class="material-symbols-outlined text-[16px] text-text-muted" id="cta-copy-icon">content_copy</span>
+      <span id="cta-copy-text">Copy</span>
+    </button>
+  </div>
+
+  <div class="flex items-center justify-center gap-2 pt-2 border-t border-neutral-200/60 w-full max-w-[360px]">
+    <a href="https://github.com/aayaan07" target="_blank" rel="noopener noreferrer" class="tactile-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-neutral-200/70 text-[12px] font-medium text-text-muted hover:text-text-primary hover:border-neutral-400 transition-all shadow-[0_2px_0_#e5e7eb]">
+      <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      <span>GitHub</span>
+    </a>
+    <a href="https://www.linkedin.com/in/aayaan-kumar-61444833b/" target="_blank" rel="noopener noreferrer" class="tactile-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-neutral-200/70 text-[12px] font-medium text-text-muted hover:text-text-primary hover:border-neutral-400 transition-all shadow-[0_2px_0_#e5e7eb]">
+      <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+      <span>LinkedIn</span>
+    </a>
+    <a href="https://x.com/aayaan_07" target="_blank" rel="noopener noreferrer" class="tactile-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-neutral-200/70 text-[12px] font-medium text-text-muted hover:text-text-primary hover:border-neutral-400 transition-all shadow-[0_2px_0_#e5e7eb]">
+      <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      <span>X</span>
+    </a>
+  </div>
+</section>
+
+<script>
+  const copyBtn = document.getElementById('cta-copy-email-btn');
+  const copyText = document.getElementById('cta-copy-text');
+  const copyIcon = document.getElementById('cta-copy-icon');
+
+  if (copyBtn && copyText && copyIcon) {
+    copyBtn.addEventListener('click', async () => {
+      const email = copyBtn.getAttribute('data-email') || 'kumar.aayaan007@gmail.com';
+      try {
+        await navigator.clipboard.writeText(email);
+        copyText.textContent = 'Copied!';
+        copyIcon.textContent = 'check';
+        copyBtn.classList.add('text-emerald-700', 'border-emerald-300');
+        setTimeout(() => {
+          copyText.textContent = 'Copy';
+          copyIcon.textContent = 'content_copy';
+          copyBtn.classList.remove('text-emerald-700', 'border-emerald-300');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy email:', err);
+      }
+    });
+  }
+</script>

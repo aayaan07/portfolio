@@ -1,0 +1,193 @@
+---
+// GSAP Animations - loaded client-side
+---
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Smooth defaults
+  gsap.defaults({
+    ease: 'power3.out',
+    duration: 0.75,
+  });
+
+  // Hero entrance animation
+  const heroText = document.querySelector('[data-gsap="hero-text"]');
+  if (heroText) {
+    gsap.from(heroText.children, {
+      y: 25,
+      opacity: 0,
+      duration: 0.85,
+      stagger: 0.12,
+      ease: 'power3.out',
+      clearProps: 'all',
+    });
+  }
+
+  const heroButtons = document.querySelector('[data-gsap="hero-buttons"]');
+  if (heroButtons) {
+    gsap.from(heroButtons.children, {
+      y: 18,
+      opacity: 0,
+      duration: 0.6,
+      stagger: 0.08,
+      delay: 0.35,
+      ease: 'power2.out',
+      clearProps: 'all',
+    });
+  }
+
+  // Section Headings Reveal
+  const sectionHeadings = document.querySelectorAll('section h2');
+  sectionHeadings.forEach(heading => {
+    gsap.from(heading, {
+      scrollTrigger: {
+        trigger: heading,
+        start: 'top 90%',
+        toggleActions: 'play none none none',
+      },
+      y: 20,
+      opacity: 0,
+      duration: 0.6,
+      clearProps: 'all',
+    });
+  });
+
+  // Stack marquee rows
+  const stack = document.querySelector('[data-gsap="stack"]');
+  if (stack) {
+    const marqueeRows = stack.querySelectorAll('.animate-marquee-left, .animate-marquee-right, .animate-marquee-left-alt');
+    gsap.from(marqueeRows, {
+      scrollTrigger: {
+        trigger: stack,
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+      },
+      opacity: 0,
+      y: 20,
+      duration: 0.8,
+      stagger: 0.12,
+      clearProps: 'opacity,transform',
+    });
+  }
+
+  // Selected Work cards - animate each card individually so both projects are clearly visible
+  const workCards = document.querySelectorAll('.work-card');
+  workCards.forEach((card, index) => {
+    gsap.from(card, {
+      scrollTrigger: {
+        trigger: card,
+        start: 'top 88%',
+        toggleActions: 'play none none none',
+      },
+      y: 35,
+      opacity: 0,
+      duration: 0.7,
+      ease: 'power3.out',
+      clearProps: 'all',
+    });
+  });
+
+  // Experience timeline items
+  const experienceSection = document.querySelector('[data-gsap="experience"]');
+  if (experienceSection) {
+    const roles = experienceSection.querySelectorAll('.group');
+    roles.forEach(role => {
+      gsap.from(role, {
+        scrollTrigger: {
+          trigger: role,
+          start: 'top 90%',
+          toggleActions: 'play none none none',
+        },
+        y: 25,
+        opacity: 0,
+        duration: 0.6,
+        clearProps: 'all',
+      });
+    });
+  }
+
+  // Games grid items
+  const gamesSection = document.querySelector('[data-gsap="games"]');
+  if (gamesSection) {
+    const gameItems = gamesSection.querySelectorAll('.group');
+    gsap.from(gameItems, {
+      scrollTrigger: {
+        trigger: gamesSection,
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.65,
+      stagger: 0.08,
+      ease: 'power3.out',
+      clearProps: 'all',
+    });
+  }
+
+  // Snapshots polaroids
+  const snapshotsSection = document.querySelector('[data-gsap="snapshots"]');
+  if (snapshotsSection) {
+    const polaroids = snapshotsSection.querySelectorAll('.polaroid-card');
+    gsap.from(polaroids, {
+      scrollTrigger: {
+        trigger: snapshotsSection,
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+      },
+      y: 35,
+      opacity: 0,
+      duration: 0.7,
+      stagger: 0.1,
+      ease: 'power3.out',
+      clearProps: 'opacity,transform',
+    });
+  }
+
+  // Spotify soundtrack card
+  const spotifySection = document.querySelector('[data-gsap="spotify"]');
+  if (spotifySection) {
+    const spotifyIframe = spotifySection.querySelector('iframe');
+    if (spotifyIframe) {
+      gsap.from(spotifyIframe, {
+        scrollTrigger: {
+          trigger: spotifyIframe,
+          start: 'top 90%',
+          toggleActions: 'play none none none',
+        },
+        y: 20,
+        opacity: 0,
+        duration: 0.7,
+        ease: 'power3.out',
+        clearProps: 'all',
+      });
+    }
+  }
+
+  // Contact CTA block
+  const cta = document.querySelector('[data-gsap="cta"]');
+  if (cta) {
+    gsap.from(cta, {
+      scrollTrigger: {
+        trigger: cta,
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+      },
+      y: 40,
+      opacity: 0,
+      scale: 0.98,
+      duration: 0.8,
+      ease: 'power3.out',
+      clearProps: 'all',
+    });
+  }
+
+  // Refresh ScrollTrigger after assets/fonts load
+  window.addEventListener('load', () => {
+    ScrollTrigger.refresh();
+  });
+</script>

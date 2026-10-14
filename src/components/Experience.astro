@@ -1,0 +1,64 @@
+---
+// Experience Timeline Section
+const roles = [
+  {
+    title: 'Founding Product Engineer',
+    badge: 'Full-time',
+    company: 'Stealth Lab • San Francisco & Remote',
+    period: '2023 — Present',
+    focus: 'Distributed systems, WebGL rendering',
+  },
+  {
+    title: 'Senior Frontend Engineer',
+    badge: '',
+    company: 'Studio Forma • New York',
+    period: '2022 — 2023',
+    focus: 'Enterprise design systems & animations',
+  },
+  {
+    title: 'Interaction Designer & Developer',
+    badge: '',
+    company: 'Independent Practice • Global',
+    period: '2020 — 2022',
+    focus: 'Contract product architecture for startups',
+  },
+];
+---
+
+<section class="py-[2.5rem] flex flex-col gap-[1.5rem]" data-gsap="experience">
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+    <div class="flex flex-col">
+      <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted uppercase">Career</span>
+      <div class="flex flex-wrap items-center gap-2.5">
+        <h2 class="text-[24px] leading-[32px] tracking-[-0.02em] font-semibold text-text-primary">Experience</h2>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface tactile-pill border border-neutral-200/70">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-primary">Looking for Summer Internships</span>
+        </div>
+      </div>
+    </div>
+    <a class="text-[13px] leading-[18px] tracking-[0.01em] font-medium text-text-muted hover:text-text-primary flex items-center gap-1 transition-colors self-start sm:self-auto" href="#">
+      <span>Full Resume</span>
+      <span class="material-symbols-outlined text-[14px]">description</span>
+    </a>
+  </div>
+  <div class="flex flex-col gap-2.5">
+    {roles.map(role => (
+      <div class="group py-[1rem] border-t border-neutral-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-[0.25rem] transition-colors">
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="text-[18px] leading-[26px] tracking-[-0.015em] font-semibold text-text-primary">{role.title}</span>
+            {role.badge && (
+              <span class="px-2.5 py-0.5 rounded-full bg-surface-subtle text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted tactile-tag border border-neutral-200/60">{role.badge}</span>
+            )}
+          </div>
+          <span class="text-[13px] leading-[20px] text-on-surface-variant">{role.company}</span>
+        </div>
+        <div class="flex flex-col sm:items-end">
+          <span class="text-[13px] leading-[18px] tracking-[0.01em] font-medium text-text-primary">{role.period}</span>
+          <span class="text-[13px] leading-[20px] text-text-muted">{role.focus}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>

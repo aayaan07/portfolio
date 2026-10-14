@@ -1,0 +1,98 @@
+---
+// Stack / Tech Marquee Section - 3 Rows with Icons8 icons
+const row1Skills = [
+  { name: 'Python', icon: '/icons/icons8-python-100.png' },
+  { name: 'C', icon: '/icons/icons8-c-programming-100.png' },
+  { name: 'JavaScript', icon: '/icons/icons8-javascript-100.png' },
+  { name: 'HTML', icon: '/icons/icons8-html-5-100.png' },
+  { name: 'CSS', icon: '/icons/icons8-css3-100.png' },
+  { name: 'SQL', icon: '/icons/icons8-database-100.png' },
+  { name: 'PostgreSQL', icon: '/icons/icons8-postgresql-100.png' },
+];
+
+const row2Skills = [
+  { name: 'React', icon: '/icons/icons8-react-100.png' },
+  { name: 'Next.js', icon: '/icons/icons8-next.js-100.png' },
+  { name: 'Node.js', icon: '/icons/icons8-node-js-100.png' },
+  { name: 'Tailwind CSS', icon: '/icons/icons8-tailwindcss-100.png' },
+  { name: 'Vite', icon: '/icons/icons8-vite-100.png' },
+  { name: 'Git', icon: '/icons/icons8-git-100.png' },
+  { name: 'GitHub', icon: '/icons/icons8-github-100.png' },
+];
+
+const row3Skills = [
+  { name: 'Firebase', icon: '/icons/icons8-firebase-100.png' },
+  { name: 'Supabase', icon: '/icons/icons8-supabase-100.png' },
+  { name: 'AWS', icon: '/icons/icons8-amazon-web-services-100.png' },
+  { name: 'Azure', icon: '/icons/icons8-azure-100.png' },
+  { name: 'Linux', icon: '/icons/icons8-linux-100.png' },
+  { name: 'Figma', icon: '/icons/icons8-figma-100.png' },
+  { name: 'Photoshop', icon: '/icons/icons8-adobe-photoshop-100.png' },
+];
+---
+
+<section class="py-[2.5rem] flex flex-col gap-[1rem] marquee-track-container overflow-hidden" data-gsap="stack">
+  <div class="flex items-end justify-between">
+    <div class="flex flex-col">
+      <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted uppercase">Technologies & Tools</span>
+      <h2 class="text-[24px] leading-[32px] tracking-[-0.02em] font-semibold text-text-primary">Stack</h2>
+    </div>
+  </div>
+
+  <div class="relative w-full overflow-hidden pt-9 pb-3">
+    <div class="pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-canvas to-transparent z-20"></div>
+    <div class="pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-canvas to-transparent z-20"></div>
+    <div class="flex flex-col gap-3.5 sm:gap-4 overflow-visible py-1">
+      <!-- Row 1: Leftward -->
+      <div class="animate-marquee-left flex items-center gap-3 sm:gap-4">
+        {[...row1Skills, ...row1Skills, ...row1Skills, ...row1Skills].map((skill) => (
+          <div
+            aria-label={skill.name}
+            class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
+          >
+            <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
+            <!-- Attached tiny hint popup -->
+            <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
+              <span>{skill.name}</span>
+              <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Row 2: Rightward -->
+      <div class="animate-marquee-right flex items-center gap-3 sm:gap-4">
+        {[...row2Skills, ...row2Skills, ...row2Skills, ...row2Skills].map((skill) => (
+          <div
+            aria-label={skill.name}
+            class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
+          >
+            <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
+            <!-- Attached tiny hint popup -->
+            <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
+              <span>{skill.name}</span>
+              <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Row 3: Leftward (alt speed) -->
+      <div class="animate-marquee-left-alt flex items-center gap-3 sm:gap-4">
+        {[...row3Skills, ...row3Skills, ...row3Skills, ...row3Skills].map((skill) => (
+          <div
+            aria-label={skill.name}
+            class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
+          >
+            <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
+            <!-- Attached tiny hint popup -->
+            <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
+              <span>{skill.name}</span>
+              <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

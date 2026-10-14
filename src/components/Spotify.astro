@@ -1,0 +1,73 @@
+---
+// Spotify Current Rotation Section
+---
+
+<section class="py-[2.5rem] flex flex-col gap-[1.5rem]" data-gsap="spotify">
+  <div class="flex items-end justify-between">
+    <div class="flex flex-col">
+      <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted uppercase">Soundtrack</span>
+      <h2 class="text-[24px] leading-[32px] tracking-[-0.02em] font-semibold text-text-primary">Current Rotation</h2>
+    </div>
+    <button
+      id="shuffle-track-btn"
+      class="text-[12px] leading-[18px] tracking-[0.01em] font-medium text-text-muted hover:text-text-primary flex items-center gap-1.5 transition-colors tactile-btn px-3 py-1.5 rounded-full border border-neutral-200/70 bg-surface shadow-[0_2px_0_#e5e7eb] cursor-pointer"
+      title="Randomize track"
+    >
+      <span class="material-symbols-outlined text-[15px] transition-transform" id="shuffle-icon">shuffle</span>
+      <span>Shuffle Track</span>
+    </button>
+  </div>
+
+  <iframe
+    id="spotify-iframe"
+    data-testid="embed-iframe"
+    style="border-radius:12px"
+    src="https://open.spotify.com/embed/track/3en2lZzcpnsHSFFWDErrll?utm_source=generator&si=cc56d40d8d584c69"
+    width="100%"
+    height="152"
+    frameBorder="0"
+    allowfullscreen=""
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+    loading="lazy"
+  ></iframe>
+</section>
+
+<script>
+  // Add your favorite Spotify track embed URLs here to enable random rotation:
+  const playlist: string[] = [
+    'https://open.spotify.com/embed/track/3en2lZzcpnsHSFFWDErrll?utm_source=generator&si=cc56d40d8d584c69',
+    // Paste more Spotify embed URLs here as you add songs
+  ];
+
+  const iframe = document.getElementById('spotify-iframe') as HTMLIFrameElement;
+  const shuffleBtn = document.getElementById('shuffle-track-btn');
+  const shuffleIcon = document.getElementById('shuffle-icon');
+
+  function pickRandomTrack() {
+    if (!iframe || playlist.length <= 1) return;
+    const currentSrc = iframe.src;
+    const pool = playlist.filter(url => url !== currentSrc);
+    const chosen = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : playlist[0];
+    iframe.src = chosen;
+  }
+
+  if (shuffleBtn) {
+    shuffleBtn.addEventListener('click', () => {
+      if (shuffleIcon) {
+        shuffleIcon.classList.add('rotate-180');
+        setTimeout(() => shuffleIcon.classList.remove('rotate-180'), 300);
+      }
+      if (playlist.length > 1) {
+        pickRandomTrack();
+      } else if (iframe) {
+        const current = iframe.src;
+        iframe.src = current;
+      }
+    });
+  }
+
+  // Only randomize on initial load if more than 1 song is in the playlist
+  if (playlist.length > 1) {
+    pickRandomTrack();
+  }
+</script>

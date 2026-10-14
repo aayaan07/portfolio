@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #FAFAFA;
+  --color-background: #f9f9f9;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F4F4F5;
+  --color-surface-container: #eeeeee;
+  --color-text-primary: #111111;
+  --color-text-muted: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-on-surface: #1a1c1c;
+  --color-on-surface-variant: #444748;
+  --color-border-subtle: #E5E7EB;
+  --color-border-hover: #D1D5DB;
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-handwriting: 'Caveat', cursive, sans-serif;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2.5rem;
+  --spacing-2xl: 4rem;
+  --spacing-3xl: 6rem;
+}
+
+.font-handwriting {
+  font-family: 'Caveat', cursive, sans-serif;
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    cursor: url('/cursor.svg') 1 1, url('/cursor.png') 1 1, auto;
+  }
+
+  body {
+    overscroll-behavior: none;
+    font-family: var(--font-sans);
+  }
+
+  /* Custom stealth arrow cursor across elements */
+  *, *::before, *::after {
+    cursor: url('/cursor.svg') 1 1, url('/cursor.png') 1 1, auto;
+  }
+
+  /* Interactive elements */
+  a, button, [role="button"], input[type="submit"], input[type="button"], .cursor-pointer {
+    cursor: url('/cursor.svg') 1 1, url('/cursor.png') 1 1, pointer;
+  }
+
+  /* Text fields keep standard text cursor */
+  input[type="text"], input[type="email"], textarea {
+    cursor: text;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Tactile 3D utilities */
+.tactile-dark-btn {
+  box-shadow: 0 3px 0 #111, 0 5px 10px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.22);
+  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tactile-dark-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #111, 0 7px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.tactile-dark-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #111, 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+}
+
+.tactile-light-btn {
+  box-shadow: 0 2.5px 0 #d1d5db, 0 4px 8px rgba(0,0,0,0.04), inset 0 1px 0 #ffffff;
+  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tactile-light-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3.5px 0 #cbd5e1, 0 6px 10px rgba(0,0,0,0.06), inset 0 1px 0 #ffffff;
+}
+.tactile-light-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #cbd5e1, 0 2px 4px rgba(0,0,0,0.04), inset 0 1px 0 #ffffff !important;
+}
+
+.tactile-pill {
+  box-shadow: 0 2px 0 #e2e8f0, inset 0 1px 0 #ffffff;
+}
+
+.tactile-card {
+  box-shadow: 0 3px 0 #e5e7eb, 0 4px 12px rgba(0,0,0,0.04), inset 0 1px 0 #ffffff;
+  transition: all 0.15s ease;
+}
+.tactile-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #d1d5db, 0 6px 14px rgba(0,0,0,0.06), inset 0 1px 0 #ffffff;
+}
+
+.tactile-tag {
+  box-shadow: 0 1.5px 0 #e2e8f0, inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Marquee Animations */
+@keyframes marquee-scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes marquee-scroll-right {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-left 32s linear infinite;
+}
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-right 34s linear infinite;
+}
+
+.animate-marquee-left-alt {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-left 36s linear infinite;
+}
+
+.animate-marquee-left:hover {
+  animation-play-state: paused;
+}
+
+.animate-marquee-right:hover {
+  animation-play-state: paused;
+}
+
+.animate-marquee-left-alt:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-left, .animate-marquee-right, .animate-marquee-left-alt {
+    animation: none !important;
+  }
+}
+
+/* Polaroid Styles */
+.polaroid-card {
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.1), 0 3px 8px -1px rgba(0,0,0,0.06);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.polaroid-card:hover {
+  box-shadow: 0 20px 32px -6px rgba(0,0,0,0.18), 0 8px 16px -2px rgba(0,0,0,0.08);
+  transform: translateY(-6px) rotate(0deg) scale(1.05) !important;
+  z-index: 30 !important;
+}

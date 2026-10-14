@@ -1,0 +1,53 @@
+---
+// Games Section
+const games = [
+  {
+    title: 'God of War & Ragnarök',
+    studio: 'Santa Monica Studio • 2018 / 2022',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBFoMsWqcz-nUtRzkHpmGc0nLAoZ7DbzHnOLFFxxHToE5u-RogyruGKGAQejHfR7AO4zRerwaxIENnSdUlBkggVC5EpBMYKA_HWmtDHctS86H_mYufBnJ57eYcgJTgzoL_yfbVl2ZU0DC2LlSsLFvHQms7hmU6RLtQBN6Pmfd3XDfDC-qwrOyyuJadI29YKHtWbR28kqxdh-lUTZg51Qz3ZMMZnd2Td0K4rl8bbDyZa1sEXyI1q2akS',
+  },
+  {
+    title: 'The Last of Us Part I',
+    studio: 'Naughty Dog • 2022',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDdNgexnagx-WV1RsbjJtyd8g7pkyZZmL1tWx3Ts-0Dro0Tuhaf_Frnc8-zb7FBsqTsJWsPQFlKil5HKLl31rgak3x8GREXZTruxCr-NGFaZXBBFPkSm_yOA6FfRGaFIAF1Kzf4Gs2qja3kpzBqMJKYYTzQKhsfjR6oaMDexhhRrV7t1uskDJ-ZXnDhfMpmMTk0BciQYOQUr8UJ8wAKIF9F3WIbdgzeFmAqxb_gCOfV9d65uXg1ZhLN',
+  },
+  {
+    title: 'Tomb Raider Trilogy',
+    studio: 'Crystal Dynamics • 2013–2018',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBEfhybRESbFss8JPjXb6n8gu9yhEng4tmWMxO66CaYw7DDkl8PR6RzJUOT9y3CLO5rAuaDZp4o_3lwVFE75b4Db1oE02EZuVBEyDlzcgfcfki26kYgeEBpUJ1Xlg59sEDhGtez-eVJ5Avej9BvW3fWgDS0Ba9tIVmEUSr9RwHyWUCPgVi8uqh6VHc3G50H45rQ4olhlzyBN0Wck_9W17E6EQQBwqCtIEFXf1PzMoe4u621Aa6MGMH1',
+  },
+  {
+    title: 'Grand Theft Auto V',
+    studio: 'Rockstar Games • 2013',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBLqmiJJG-hEG0obKFyyy62-7yyUWUHcQMSYuWRB8k8DPlrK9ZEbxyB0ZwBnDqk6JK93IYtzlHcVfrU6jLPQ-L3pcf9lgB0fhN3ucFllFT9En9zE18I74KLbiiATnscwQzY6VbtuScD9vZE7Xtv3XsF3M6Wa5IqUVmXRs7qXumiv7dZn6n5UwQHdsBri93CbNJFH14Ay_UUNahmMcpd0DucxviJpt9TUmxuPxqRRdj6MMp0aO6J9tA6',
+  },
+  {
+    title: 'inFAMOUS First Light',
+    studio: 'Sucker Punch • 2014',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9zNnf8cgWykE7x_UsC561vD8s9By655CPouLh-9EDrEPf5zgPrYeaJPaxdpqG9BtFXV7sHQOq2j2Q5RHbtHvOmlh10YtkuI5RXaQFmkXHxTclw4UcRG2iZtk12dlkmO93N8dPEGK0hfSy3GVATDpi94kitcyp0wzTzass9XJ8hfmePyoaPqlUbRn7WxQ7TD9VEam7roeYnVggCJgfl03zyZolxCA6wvk7J3DMdLmpjOKYfPFlBT21',
+  },
+];
+---
+
+<section class="py-[2.5rem] flex flex-col gap-[1.5rem]" data-gsap="games">
+  <div class="flex items-end justify-between">
+    <div class="flex flex-col">
+      <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted uppercase">Interactive Medium</span>
+      <h2 class="text-[24px] leading-[32px] tracking-[-0.02em] font-semibold text-text-primary">Games I Have Played</h2>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-3.5">
+    {games.map(game => (
+      <div class="group flex flex-col gap-2">
+        <div class="relative aspect-[3/4] rounded-lg overflow-hidden bg-neutral-900 border border-neutral-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.14)] group-hover:-translate-y-1 transition-all duration-200">
+          <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={game.title} src={game.img} />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </div>
+        <div class="flex flex-col">
+          <h3 class="text-[13px] sm:text-[14px] font-semibold leading-tight text-text-primary group-hover:text-black transition-colors">{game.title}</h3>
+          <span class="text-[12px] text-text-muted">{game.studio}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>

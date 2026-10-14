@@ -1,0 +1,113 @@
+---
+// Polaroid Snapshots Section
+const photos = [
+  {
+    caption: 'bali!!',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCANAmqEBWNTKmk9LiRJ2z7j7Hh8YtBmXdFnnjw2ADeahczDL7Ilaq02k_EzEESrTkN_RanG1sUpSqBje8eSIePMfp8Mm9Ed1UZJVkyw3MPfsTI4R2AKCSQeBJ2NlLyR7eVkTfjUgZ9xagZR967nsLTcbX3P_xM_6DYf0Wlh12ZsRtVZY7ILBoewAXt1HA35hE90_kQtMGEsxUa8Rr8MeaZNO4Hc772BeKORi7epsNj6eq_67hhjmlq',
+    rotation: '-2.5deg',
+  },
+  {
+    caption: 'bookies',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCWUGvy0Ya0OJqJHM6rA4fUb8U-vpXSff9tthFd3tYFPH2MzQK0JHoox7B7q27muw7wFyEdSqM4sXX-OAob7fIcaoi0ZGNC7NfwkfKwrP2pIs7CWJnqWDDEWQUq2C1hU6BmyJKxLFUhdDegJVrfw3p-CCgIlsHYPycH6yi_UHg0ldaMB_v0ULA05_dMkGdLg3qeNuIWq_ZMfXeYFtEao5Qr_gl8hSHBt-SYPDxXeCmmLFjiMqp42PRL',
+    rotation: '1.8deg',
+  },
+  {
+    caption: 'beach :3',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDmcxb2rimLEucXJ3OnoxU_vpuMSuCNEk6sqcSMuMqRgd164m8cznN6UoL7F8y2eRDaeXpNTdaupR_mdGuScastJbo_3p0mpTM2gvH4LHIZ_F5HsBLp5UqomU_5iLV2hj7FckB7zYKLxwsKzA9gLCkQOMlj_ZA_iCwspYJMkC3Ug6-bEx0LOnJezxBPqNkFpaY3DK4NQ3VxvCYHRdpAE3Hi2iG7fPdyd3GftXmLPrf0-Gt23P7W9nMi',
+    rotation: '-1.5deg',
+  },
+  {
+    caption: 'gang',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBrEGdfRrxZ1_2b_6P9rc1UOLpATGlC2fVXp2sw_6V2wLoBMNcac3m9MIwuDvBbSnqQRi0RDygTB02v5hTZCW3hyj0BWR81lEDoGkJeBbwH--cQJMHhWYPipXEg46Filht01zJ4f4mmNLXeLu84f2Otn5sDOk7ntEYTrvt2yMITjQu2ggkKO6av226CwWUWgBKJ8gIfSNCv2NuepQHohvdljCGjxPPDWE_HmkvqKZFw8aBqOMK2RLol',
+    rotation: '2.4deg',
+  },
+];
+---
+
+<section class="py-[2.5rem] flex flex-col gap-[1.5rem]" data-gsap="snapshots">
+  <div class="flex items-end justify-between">
+    <div class="flex flex-col">
+      <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted uppercase">Photographs & Memories</span>
+      <h2 class="text-[24px] leading-[32px] tracking-[-0.02em] font-semibold text-text-primary">Snapshots</h2>
+    </div>
+  </div>
+  <div class="w-full overflow-x-auto pb-6 pt-4 px-3 sm:px-4 -mx-3 sm:-mx-4">
+    <div class="flex items-center justify-start sm:justify-center gap-3 sm:gap-4 min-w-max py-2">
+      {photos.map(photo => (
+        <div
+          class="polaroid-card cursor-pointer bg-white p-2.5 pb-4 sm:p-3 sm:pb-5 rounded-[4px] border border-neutral-200/90 w-[150px] sm:w-[165px] flex flex-col items-center hover:!rotate-0"
+          style={`rotate: ${photo.rotation}`}
+          data-caption={photo.caption}
+          data-full={photo.img}
+        >
+          <div class="w-full aspect-square overflow-hidden bg-neutral-100 rounded-[2px] shadow-inner">
+            <img class="w-full h-full object-cover" alt={photo.caption} src={photo.img} />
+          </div>
+          <span class="font-[Caveat,cursive] text-[22px] sm:text-[24px] text-neutral-900 mt-2 sm:mt-2.5 font-bold tracking-wide select-none">{photo.caption}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<!-- Lightbox Modal -->
+<div aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300" id="polaroid-modal" role="dialog">
+  <div class="relative max-w-[90vw] max-h-[85vh] bg-white p-4 sm:p-5 pb-8 sm:pb-9 rounded shadow-2xl flex flex-col items-center transform scale-95 transition-transform duration-300" id="polaroid-modal-card">
+    <button aria-label="Close photo preview" class="absolute -top-3.5 -right-3.5 sm:-top-4 sm:-right-4 w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shadow-lg hover:bg-neutral-800 focus:outline-none" id="polaroid-modal-close">
+      <span class="material-symbols-outlined text-[18px]">close</span>
+    </button>
+    <div class="relative w-auto max-h-[65vh] overflow-hidden rounded-[2px] bg-neutral-900 flex items-center justify-center">
+      <img alt="Enlarged photo" class="max-h-[65vh] w-auto max-w-full object-contain" id="polaroid-modal-img" src="" />
+    </div>
+    <span class="font-[Caveat,cursive] text-[32px] sm:text-[36px] text-neutral-900 font-bold mt-4 tracking-wide select-none" id="polaroid-modal-caption"></span>
+  </div>
+</div>
+
+<script>
+  // Polaroid Lightbox
+  const modal = document.getElementById('polaroid-modal');
+  const modalCard = document.getElementById('polaroid-modal-card');
+  const modalImg = document.getElementById('polaroid-modal-img') as HTMLImageElement;
+  const modalCaption = document.getElementById('polaroid-modal-caption');
+  const modalClose = document.getElementById('polaroid-modal-close');
+  const polaroidCards = document.querySelectorAll('.polaroid-card');
+
+  function openModal(fullSrc: string, caption: string) {
+    if (!modal || !modalImg || !modalCaption) return;
+    modalImg.src = fullSrc;
+    modalCaption.textContent = caption;
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modalCard?.classList.remove('scale-95');
+    modalCard?.classList.add('scale-100');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modalCard?.classList.remove('scale-100');
+    modalCard?.classList.add('scale-95');
+    document.body.style.overflow = '';
+    setTimeout(() => {
+      if (modalImg) modalImg.src = '';
+    }, 300);
+  }
+
+  polaroidCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const fullSrc = card.getAttribute('data-full');
+      const caption = card.getAttribute('data-caption') || '';
+      if (fullSrc) openModal(fullSrc, caption);
+    });
+  });
+
+  modalClose?.addEventListener('click', closeModal);
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && !modal.classList.contains('opacity-0')) {
+      closeModal();
+    }
+  });
+</script>
