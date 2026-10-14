@@ -34,7 +34,8 @@
   html, body {
     margin: 0;
     padding: 0;
-    cursor: url('/cursor.svg') 1 1, url('/cursor.png') 1 1, auto;
+    cursor: -webkit-image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto;
+    cursor: image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto;
   }
 
   body {
@@ -42,19 +43,64 @@
     font-family: var(--font-sans);
   }
 
-  /* Custom stealth arrow cursor across elements */
+  /* Default custom pointer cursor across all elements */
   *, *::before, *::after {
-    cursor: url('/cursor.svg') 1 1, url('/cursor.png') 1 1, auto;
+    cursor: -webkit-image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto;
+    cursor: image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto;
   }
 
-  /* Interactive elements */
-  a, button, [role="button"], input[type="submit"], input[type="button"], .cursor-pointer {
-    cursor: url('/cursor.svg') 1 1, url('/cursor.png') 1 1, pointer;
+  /* Interactive elements: buttons, links, and clickables */
+  a,
+  button,
+  [role="button"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  .cursor-pointer,
+  [style*="cursor: pointer"],
+  [style*="cursor:pointer"],
+  summary,
+  select,
+  label[for],
+  [onclick] {
+    cursor: -webkit-image-set(url('/hand-pointer.png') 1x, url('/hand-pointer@2x.png') 2x) 6 1, url('/hand-pointer.png') 6 1, pointer !important;
+    cursor: image-set(url('/hand-pointer.png') 1x, url('/hand-pointer@2x.png') 2x) 6 1, url('/hand-pointer.png') 6 1, pointer !important;
   }
 
-  /* Text fields keep standard text cursor */
-  input[type="text"], input[type="email"], textarea {
-    cursor: text;
+  /* Ensure descendants inside interactive elements inherit hand pointer */
+  a *,
+  button *,
+  [role="button"] *,
+  .cursor-pointer *,
+  [style*="cursor: pointer"] *,
+  [style*="cursor:pointer"] *,
+  label[for] * {
+    cursor: inherit !important;
+  }
+
+  /* Text inputs keep standard text cursor */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea {
+    cursor: text !important;
+  }
+
+  /* Disabled elements */
+  [disabled],
+  [disabled] *,
+  [aria-disabled="true"],
+  [aria-disabled="true"] * {
+    cursor: not-allowed !important;
+  }
+
+  /* Canvas dynamic grab states */
+  canvas[style*="cursor: grab"] {
+    cursor: grab !important;
+  }
+  canvas[style*="cursor: grabbing"] {
+    cursor: grabbing !important;
   }
 
   ::-webkit-scrollbar {

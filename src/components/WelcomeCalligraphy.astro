@@ -1,0 +1,259 @@
+---
+// src/components/WelcomeCalligraphy.astro
+interface Props {
+  width?: string;
+  color?: string;
+  duration?: number; // Total speed multiplier (1 = ~2.6s)
+  replayOnClick?: boolean;
+}
+
+const {
+  width = "420px",
+  color = "#141417",
+  duration = 1,
+  replayOnClick = true
+} = Astro.props;
+---
+
+<div
+  class="welcome-calligraphy-wrap"
+  style={`--calligraphy-width: ${width}; --ink-color: ${color}; --speed: ${duration};`}
+  data-replay={replayOnClick ? "true" : "false"}
+  title={replayOnClick ? "Click to replay handwriting" : undefined}
+>
+  <svg
+    class="welcome-svg"
+    viewBox="0 0 480 140"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    role="img"
+    aria-label="Welcome written in cursive calligraphy"
+  >
+    <defs>
+      <!--
+        Sequential cursive strokes for "Welcome"
+        Split at natural pen reversals (cusps) so every turn is crisp
+      -->
+      <!-- 1. 'W' entry arch & first downstroke -->
+      <path
+        id="wc-s1"
+        pathLength="1"
+        d="M 42 52 C 48 36, 58 32, 62 44 C 65 58, 66 86, 68 108"
+      />
+      <!-- 2. 'W' first upstroke to center peak -->
+      <path
+        id="wc-s2"
+        pathLength="1"
+        d="M 68 108 C 74 90, 86 64, 94 48"
+      />
+      <!-- 3. 'W' second downstroke -->
+      <path
+        id="wc-s3"
+        pathLength="1"
+        d="M 94 48 C 97 68, 100 90, 104 108"
+      />
+      <!-- 4. 'W' second upstroke & top eyelet loop -->
+      <path
+        id="wc-s4"
+        pathLength="1"
+        d="M 104 108 C 114 90, 128 58, 133 40 C 135 32, 127 31, 126 39 C 125 47, 135 52, 148 46"
+      />
+      <!-- 5. 'e' loop -> tall 'l' ascender -> 'c' top hook -->
+      <path
+        id="wc-s5"
+        pathLength="1"
+        d="M 138 92 C 150 88, 166 79, 165 70 C 164 62, 151 64, 147 78 C 143 92, 149 108, 162 108 C 175 108, 192 84, 203 54 C 210 35, 209 24, 202 24 C 195 24, 189 38, 186 58 C 183 78, 183 108, 195 108 C 206 108, 218 92, 228 79 C 234 71, 241 70, 243 76"
+      />
+      <!-- 6. 'c' curve -> connector up to 'o' -->
+      <path
+        id="wc-s6"
+        pathLength="1"
+        d="M 243 76 C 239 67, 224 68, 219 86 C 215 100, 223 109, 236 108 C 248 107, 260 92, 270 78 C 275 72, 280 70, 284 73"
+      />
+      <!-- 7. 'o' oval -> top knot -> first stem of 'm' -->
+      <path
+        id="wc-s7"
+        pathLength="1"
+        d="M 284 73 C 272 67, 259 76, 257 91 C 255 104, 264 109, 275 108 C 286 107, 292 91, 288 77 C 285 69, 278 71, 279 77 C 280 83, 294 82, 304 75 C 310 71, 312 78, 309 90 C 307 98, 306 104, 305 108"
+      />
+      <!-- 8. 'm' second arch -->
+      <path
+        id="wc-s8"
+        pathLength="1"
+        d="M 305 108 C 308 92, 316 71, 327 71 C 336 71, 336 84, 333 96 C 332 102, 331 105, 330 108"
+      />
+      <!-- 9. 'm' third arch -> final 'e' -> gentle exit tail -->
+      <path
+        id="wc-s9"
+        pathLength="1"
+        d="M 330 108 C 333 92, 342 71, 353 71 C 362 71, 362 84, 359 96 C 357 104, 360 109, 368 108 C 378 107, 392 92, 405 78 C 410 72, 410 66, 404 66 C 396 66, 389 76, 387 89 C 385 102, 393 109, 407 108 C 422 107, 435 98, 446 88"
+      />
+    </defs>
+
+    <!--
+      Three slightly offset nib layers (-1px, 0px, +1px at a ~40° fountain pen angle)
+      This automatically creates thick downstrokes and thin upstrokes as it animates!
+    -->
+    <g class="nib-layer nib-edge-left" transform="translate(-0.95, -1.05)">
+      <use href="#wc-s1" class="stroke s1" />
+      <use href="#wc-s2" class="stroke s2" />
+      <use href="#wc-s3" class="stroke s3" />
+      <use href="#wc-s4" class="stroke s4" />
+      <use href="#wc-s5" class="stroke s5" />
+      <use href="#wc-s6" class="stroke s6" />
+      <use href="#wc-s7" class="stroke s7" />
+      <use href="#wc-s8" class="stroke s8" />
+      <use href="#wc-s9" class="stroke s9" />
+    </g>
+
+    <g class="nib-layer nib-core">
+      <use href="#wc-s1" class="stroke s1" />
+      <use href="#wc-s2" class="stroke s2" />
+      <use href="#wc-s3" class="stroke s3" />
+      <use href="#wc-s4" class="stroke s4" />
+      <use href="#wc-s5" class="stroke s5" />
+      <use href="#wc-s6" class="stroke s6" />
+      <use href="#wc-s7" class="stroke s7" />
+      <use href="#wc-s8" class="stroke s8" />
+      <use href="#wc-s9" class="stroke s9" />
+    </g>
+
+    <g class="nib-layer nib-edge-right" transform="translate(0.95, 1.05)">
+      <use href="#wc-s1" class="stroke s1" />
+      <use href="#wc-s2" class="stroke s2" />
+      <use href="#wc-s3" class="stroke s3" />
+      <use href="#wc-s4" class="stroke s4" />
+      <use href="#wc-s5" class="stroke s5" />
+      <use href="#wc-s6" class="stroke s6" />
+      <use href="#wc-s7" class="stroke s7" />
+      <use href="#wc-s8" class="stroke s8" />
+      <use href="#wc-s9" class="stroke s9" />
+    </g>
+  </svg>
+</div>
+
+<style>
+  .welcome-calligraphy-wrap {
+    display: inline-block;
+    width: 100%;
+    max-width: var(--calligraphy-width, 420px);
+    user-select: none;
+  }
+
+  .welcome-calligraphy-wrap[data-replay="true"] {
+    cursor: pointer;
+  }
+
+  .welcome-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .nib-layer {
+    stroke: var(--ink-color, #141417);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .nib-core {
+    stroke-width: 3.1;
+  }
+
+  .nib-edge-left,
+  .nib-edge-right {
+    stroke-width: 2.3;
+  }
+
+  /* Base stroke state: hidden until its turn in the writing sequence */
+  .stroke {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1.002;
+    animation-name: write-ink;
+    animation-fill-mode: forwards;
+  }
+
+  /* Sequential timing & natural hand acceleration per stroke */
+  .s1 {
+    animation-duration: calc(0.22s * var(--speed, 1));
+    animation-delay: calc(0.10s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .s2 {
+    animation-duration: calc(0.17s * var(--speed, 1));
+    animation-delay: calc(0.31s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1);
+  }
+  .s3 {
+    animation-duration: calc(0.17s * var(--speed, 1));
+    animation-delay: calc(0.47s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .s4 {
+    animation-duration: calc(0.28s * var(--speed, 1));
+    animation-delay: calc(0.63s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  /* Brief 70ms pen lift after capital 'W', then continuous 'elcome' */
+  .s5 {
+    animation-duration: calc(0.54s * var(--speed, 1));
+    animation-delay: calc(0.98s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1);
+  }
+  .s6 {
+    animation-duration: calc(0.27s * var(--speed, 1));
+    animation-delay: calc(1.51s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.35, 0, 0.3, 1);
+  }
+  .s7 {
+    animation-duration: calc(0.35s * var(--speed, 1));
+    animation-delay: calc(1.77s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.35, 0, 0.3, 1);
+  }
+  .s8 {
+    animation-duration: calc(0.18s * var(--speed, 1));
+    animation-delay: calc(2.11s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.35, 0, 0.3, 1);
+  }
+  .s9 {
+    animation-duration: calc(0.42s * var(--speed, 1));
+    animation-delay: calc(2.28s * var(--speed, 1));
+    animation-timing-function: cubic-bezier(0.25, 0.1, 0.15, 1);
+  }
+
+  @keyframes write-ink {
+    0% {
+      stroke-dashoffset: 1.002;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+</style>
+
+<script>
+  function setupCalligraphyReplay() {
+    document
+      .querySelectorAll<HTMLElement>('.welcome-calligraphy-wrap[data-replay="true"]')
+      .forEach((wrap) => {
+        if (wrap.dataset.bound === "true") return;
+        wrap.dataset.bound = "true";
+
+        wrap.addEventListener("click", () => {
+          const strokes = wrap.querySelectorAll<SVGElement>(".stroke");
+          strokes.forEach((s) => {
+            s.style.animation = "none";
+          });
+          // Trigger reflow to restart the CSS keyframe sequence cleanly
+          void wrap.offsetWidth;
+          strokes.forEach((s) => {
+            s.style.animation = "";
+          });
+        });
+      });
+  }
+
+  setupCalligraphyReplay();
+  document.addEventListener("astro:page-load", setupCalligraphyReplay);
+</script>

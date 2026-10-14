@@ -15,7 +15,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 >
   <canvas
     class="forest-canvas"
-    aria-label="Interactive monochrome dotted forest with distant pine trees, varied foreground oak and birch trees with visible bark, wildflowers, waving grass, and a realistic stag deer"
+    aria-label="Interactive monochrome dotted forest with distant pine trees, foreground fir trees with bare lower trunks, leafless winter trees, wildflowers, waving grass, and a realistic stag deer"
   ></canvas>
 </div>
 
@@ -52,6 +52,167 @@ const { height = "560px", dotSize = 3 } = Astro.props;
   // Pre-computed monochrome shade LUT (0 = pitch black .. 255 = light grey)
   const SHADE_LUT: string[] = Array.from({ length: 256 }, (_, i) => `rgb(${i},${i},${i})`);
 
+  // Grey helper: grey(40, 0.9) -> "rgba(40,40,40,0.9)"
+  const grey = (s: number, a = 1) => {
+    const v = Math.max(0, Math.min(255, Math.round(s)));
+    return `rgba(${v},${v},${v},${a})`;
+  };
+
+  // =========================================================================
+  // SHADE PALETTE  (0 = black ... 255 = white)
+  // Every element gets its own place on the grey scale so the scene reads in
+  // layers: far = light, mid = medium, near = dark, deer = darkest focal point.
+  // Tweak any number here to re-balance the whole piece.
+  // =========================================================================
+  const PAL = {
+    // Ground
+    groundTop: 58,
+    groundBottom: 24,
+
+    // Deer (kept darkest so it pops, with lighter belly / far legs / rump)
+    deerBody: 12,
+    deerNeck: 16,
+    deerHead: 14,
+    deerTail: 26,
+    deerLegNear: 16,
+    deerLegFar: 92,
+    deerBelly: 112,
+    deerRump: 170,
+    deerEarBack: 104,
+    deerEarFront: 18,
+    deerAntlerFar: 112,
+    deerAntlerNear: 10,
+    deerHoof: 6,
+
+    // Misc
+    bird: 14,
+    sprout: 44,
+    sproutLeaf: 26
+  };
+
+  interface TrunkPt {
+    x: number; // offset from tree.x
+    y: number; // offset from ground (negative = up)
+    w: number; // full trunk width at this point
+  }
+
+  interface Limb {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    w: number;
+  }
+
+  // Interpolate along a trunk polyline (u: 0 = ground .. 1 = top)
+  function trunkAt(trunk: TrunkPt[], u: number): TrunkPt {
+    const f = Math.max(0, Math.min(0.9999, u)) * (trunk.length - 1);
+    const i = Math.floor(f);
+    const k = f - i;
+    const a = trunk[i];
+    const b = trunk[i + 1];
+    return {
+      x: a.x + (b.x - a.x) * k,
+      y: a.y + (b.y - a.y) * k,
+      w: a.w + (b.w - a.w) * k
+    };
+  }
+
+  // Build a sparse, leafless tree: one tapering trunk, a handful of angular limbs
+  function buildBareTree(h: number, tw: number, curve: number) {
+    const trunk: TrunkPt[] = [];
+    const steps = 8;
+    for (let j = 0; j <= steps; j++) {
+      const u = j / steps;
+      trunk.push({
+        x: curve * Math.sin(u * Math.PI * 0.85) + (j > 0 ? (Math.random() - 0.5) * 1.2 : 0),
+        y: -h * 0.94 * u,
+        w: j === 0 ? tw * 1.35 : tw * (1 - 0.86 * u) // root flare, then taper
+      });
+    }
+
+    const limbs: Limb[] = [];
+    const count = 4 + (Math.random() < 0.5 ? 1 : 0);
+    let side = Math.random() < 0.5 ? -1 : 1;
+    let perch = { ox: 0, oy: -h * 0.7 };
+
+    for (let b = 0; b < count; b++) {
+      const u = 0.42 + (b / (count - 1)) * 0.46 + (Math.random() - 0.5) * 0.04;
+      const o = trunkAt(trunk, u);
+      const len = h * (0.3 - 0.17 * u) * (0.85 + Math.random() * 0.3);
+      const ang = side * (0.55 + Math.random() * 0.45);
+      const th = Math.max(1.1, tw * 0.36 * (1 - u * 0.45));
+
+      // Limb: shoulder -> elbow -> tip, curling upward
+      const mx = o.x + Math.sin(ang) * len * 0.55;
+      const my = o.y - Math.cos(ang) * len * 0.55;
+      const ang2 = ang * 0.55;
+      const ex = mx + Math.sin(ang2) * len * 0.45;
+      const ey = my - Math.cos(ang2) * len * 0.45;
+
+      limbs.push({ x1: o.x, y1: o.y, x2: mx, y2: my, w: th });
+      limbs.push({ x1: mx, y1: my, x2: ex, y2: ey, w: th * 0.72 });
+
+      // One single fork off the elbow
+      const fAng = -side * 0.12;
+      limbs.push({
+        x1: mx,
+        y1: my,
+        x2: mx + Math.sin(fAng) * len * 0.32,
+        y2: my - Math.cos(fAng) * len * 0.32,
+        w: th * 0.55
+      });
+
+      // Occasionally a tiny split at the tip
+      if (Math.random() < 0.6) {
+        for (const d of [-0.6, 0.6]) {
+          limbs.push({
+            x1: ex,
+            y1: ey,
+            x2: ex + Math.sin(ang2 + d) * len * 0.2,
+            y2: ey - Math.cos(ang2 + d) * len * 0.2,
+            w: th * 0.4
+          });
+        }
+      }
+
+      perch = { ox: ex, oy: ey };
+      side = -side;
+    }
+
+    // Forked leader at the very top
+    const top = trunk[trunk.length - 1];
+    limbs.push({ x1: top.x, y1: top.y, x2: top.x + 3.5, y2: top.y - 7, w: 1.1 });
+    limbs.push({ x1: top.x, y1: top.y, x2: top.x - 3, y2: top.y - 5.5, w: 1 });
+
+    const marks: { u: number; side: number }[] = [];
+    for (let n = 0; n < 7; n++) {
+      marks.push({ u: 0.06 + (n / 7) * 0.55, side: n % 2 === 0 ? -1 : 1 });
+    }
+
+    return { trunk, limbs, marks, perch };
+  }
+
+  // Bottom zigzag edge of one fir tier, from right corner to left corner
+  function tierEdge(cx: number, baseY: number, hw: number, th: number) {
+    const S = hw > 22 ? 8 : hw > 12 ? 6 : 4;
+    const pts: [number, number][] = [];
+    for (let k = 0; k <= S; k++) {
+      const x = cx + hw - (2 * hw * k) / S;
+      pts.push([x, k % 2 === 0 ? baseY + th * 0.07 : baseY - th * 0.16]);
+    }
+    return pts;
+  }
+
+  function fillPoly(c: CanvasRenderingContext2D, pts: [number, number][], fill: string) {
+    c.beginPath();
+    c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.closePath();
+    c.fillStyle = fill;
+    c.fill();
+  }
+
   function initForestFooter(wrapper: HTMLElement) {
     if (wrapper.dataset.ready === "true") return;
     wrapper.dataset.ready = "true";
@@ -79,36 +240,28 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       vSway: number;
     }
 
-    // 2. Foreground Diverse Woodland Trees (Visible trunk bark + high canopy)
-    interface BranchSpec {
-      startFrac: number; // Where along the trunk the branch splits (0.42..0.75)
-      dx: number;        // Horizontal reach of branch
-      dy: number;        // Vertical reach of branch
-      ctrlX: number;     // Bezier curve control offset
-      ctrlY: number;
-      thick: number;
-    }
-
-    interface LeafPad {
-      ox: number;
-      oy: number;
-      rx: number;
-      ry: number;
-      shade: number;
-    }
-
+    // 2. Foreground trees: "fir" (bare lower trunk, tiered christmas-tree crown
+    //    starting around the middle) and "bare" (leafless, few limbs)
     interface FrontTree {
       x: number;
-      kind: "oak" | "birch" | "scots-pine";
+      kind: "fir" | "bare";
       h: number;
       w: number;
       trunkWidth: number;
       trunkCurve: number;
       sway: number;
       vSway: number;
-      branches: BranchSpec[];
-      foliage: LeafPad[];
-      barkNotches: { yFrac: number; side: number }[];
+      barkShade: number;
+      // fir
+      foliageStart: number; // fraction of height where the first tier begins
+      tiers: number;
+      foliageShade: number;
+      // bare
+      trunk: TrunkPt[];
+      limbs: Limb[];
+      marks: { u: number; side: number }[];
+      // where startled birds burst out from (relative to tree.x / ground)
+      perch: { ox: number; oy: number };
     }
 
     interface Plant {
@@ -118,6 +271,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       bend: number;
       vBend: number;
       hasSeeds: boolean;
+      tone: number; // per-plant shade offset
     }
 
     interface GrassBlade {
@@ -128,6 +282,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       stiff: number;
       layer: "back" | "front";
       phase: number;
+      shade: number;
     }
 
     interface Spore {
@@ -163,7 +318,6 @@ const { height = "560px", dotSize = 3 } = Astro.props;
     let birds: PerchedBird[] = [];
     let treats: SproutTreat[] = [];
 
-    // 0.85x of previous 2.25 deer scale = 1.91
     const DEER_SCALE = 1.91;
     const deer = {
       x: 120,
@@ -181,7 +335,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 
     function buildForest() {
       // =========================================================================
-      // 1. DISTANT BACKGROUND PINE TREES (Look far away in misty light-ash grey)
+      // 1. DISTANT BACKGROUND PINE TREES (unchanged)
       // =========================================================================
       backPines = [];
       const pineCount = Math.max(10, Math.floor(cols / 28));
@@ -199,154 +353,90 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       }
 
       // =========================================================================
-      // 2. FOREGROUND VARIED TREES (Oak, Birch, High-Crown Scots Pine)
-      //    Leaves start 45%–58% UP from the ground so gnarled bark is clearly visible!
+      // 2. FOREGROUND TREES: firs (crown starts mid-trunk) + leafless trees
       // =========================================================================
       frontTrees = [];
       const frontCount = Math.max(5, Math.floor(cols / 64));
-      const kinds: FrontTree["kind"][] = ["oak", "birch", "scots-pine"];
+      const pattern: FrontTree["kind"][] = ["fir", "bare", "fir", "fir", "bare", "fir", "bare", "fir"];
+      let bareIdx = 0;
 
       for (let i = 0; i < frontCount; i++) {
-        const kind = kinds[i % kinds.length];
+        const kind = pattern[i % pattern.length];
         const maxH = Math.min(210, rows * 0.94);
-        const h =
-          kind === "oak"
-            ? maxH * (0.84 + Math.random() * 0.12)
-            : kind === "birch"
-            ? maxH * (0.88 + Math.random() * 0.1)
-            : maxH * (0.8 + Math.random() * 0.14);
+        const x = (cols / frontCount) * (i + 0.5) + (Math.random() - 0.5) * 20;
 
-        const w = kind === "oak" ? h * 0.68 : kind === "birch" ? h * 0.46 : h * 0.54;
-        const trunkWidth = kind === "oak" ? 11.5 : kind === "birch" ? 6.8 : 8.5;
-        const trunkCurve = (Math.random() - 0.5) * 10;
+        if (kind === "fir") {
+          const h = maxH * (0.86 + Math.random() * 0.14);
+          const w = h * (0.4 + Math.random() * 0.1);
+          const foliageStart = 0.4 + Math.random() * 0.1; // trunk is bare for the lower 40-50%
+          const tiers = 6 + Math.floor(Math.random() * 3);
 
-        const branches: BranchSpec[] = [];
-        const foliage: LeafPad[] = [];
-        const barkNotches: { yFrac: number; side: number }[] = [];
+          frontTrees.push({
+            x,
+            kind,
+            h,
+            w,
+            trunkWidth: 7 + Math.random() * 2,
+            trunkCurve: (Math.random() - 0.5) * 3,
+            sway: 0,
+            vSway: 0,
+            barkShade: 30 + Math.floor(Math.random() * 14),
+            foliageStart,
+            tiers,
+            foliageShade: 44 + Math.floor(Math.random() * 26),
+            trunk: [],
+            limbs: [],
+            marks: [],
+            perch: {
+              ox: (Math.random() - 0.5) * w * 0.3,
+              oy: -h * (foliageStart + (1 - foliageStart) * 0.5)
+            }
+          });
+        } else {
+          const h = maxH * (0.74 + Math.random() * 0.16);
+          const w = h * (0.5 + Math.random() * 0.1);
+          const trunkWidth = 8 + Math.random() * 2.5;
+          const trunkCurve = (Math.random() - 0.5) * 8;
+          const geo = buildBareTree(h, trunkWidth, trunkCurve);
+          const pale = bareIdx % 2 === 1; // alternate dark trunks and pale birch-like trunks
+          bareIdx++;
 
-        // Bark texture notches along the lower bare trunk
-        for (let n = 0; n < 7; n++) {
-          barkNotches.push({
-            yFrac: 0.08 + (n / 7) * 0.48,
-            side: n % 2 === 0 ? -1 : 1
+          frontTrees.push({
+            x,
+            kind,
+            h,
+            w,
+            trunkWidth,
+            trunkCurve,
+            sway: 0,
+            vSway: 0,
+            barkShade: pale ? 128 + Math.floor(Math.random() * 14) : 40 + Math.floor(Math.random() * 12),
+            foliageStart: 1,
+            tiers: 0,
+            foliageShade: 0,
+            trunk: geo.trunk,
+            limbs: geo.limbs,
+            marks: geo.marks,
+            perch: geo.perch
           });
         }
-
-        if (kind === "oak") {
-          // Broadleaf Oak: Bare trunk rises 46% up, then splits into 4 wide gnarled limbs
-          const limbAngles = [-1, -0.42, 0.42, 1];
-          for (const la of limbAngles) {
-            const startFrac = 0.44 + Math.abs(la) * 0.06;
-            const dx = la * w * 0.46;
-            const dy = -h * (0.28 + (1 - Math.abs(la)) * 0.12);
-            branches.push({
-              startFrac,
-              dx,
-              dy,
-              ctrlX: dx * 0.55,
-              ctrlY: dy * 0.25,
-              thick: trunkWidth * (0.48 - Math.abs(la) * 0.1)
-            });
-
-            // Billowy rounded leaf clusters perched high at the end of each limb
-            foliage.push({
-              ox: dx * 0.95,
-              oy: -h * startFrac + dy,
-              rx: w * (0.24 + Math.random() * 0.05),
-              ry: h * (0.14 + Math.random() * 0.03),
-              shade: 54 + Math.floor(Math.random() * 18)
-            });
-          }
-          // High central crown clusters
-          foliage.push(
-            { ox: 0, oy: -h * 0.84, rx: w * 0.34, ry: h * 0.17, shade: 48 },
-            { ox: -w * 0.2, oy: -h * 0.75, rx: w * 0.26, ry: h * 0.15, shade: 64 },
-            { ox: w * 0.2, oy: -h * 0.75, rx: w * 0.26, ry: h * 0.15, shade: 58 }
-          );
-        } else if (kind === "birch") {
-          // Tall Slender Birch / Aspen: Bare trunk for bottom 48%, delicate ascending limbs & airy pads
-          const limbOffsets = [-0.85, -0.35, 0.35, 0.85, 0];
-          for (const lo of limbOffsets) {
-            const startFrac = 0.46 + (1 - Math.abs(lo)) * 0.14;
-            const dx = lo * w * 0.45;
-            const dy = -h * (0.26 + (1 - Math.abs(lo)) * 0.12);
-            branches.push({
-              startFrac,
-              dx,
-              dy,
-              ctrlX: dx * 0.35,
-              ctrlY: dy * 0.6,
-              thick: trunkWidth * 0.42
-            });
-            foliage.push({
-              ox: dx,
-              oy: -h * startFrac + dy,
-              rx: w * 0.24,
-              ry: h * 0.11,
-              shade: 68 + Math.floor(Math.random() * 20)
-            });
-          }
-        } else {
-          // Old-Growth High-Crown Scots Pine: Winding bare trunk for bottom 52%, flat horizontal needle pads
-          const padLevels = [
-            { sf: 0.52, dir: -1, reach: 0.44 },
-            { sf: 0.58, dir: 1, reach: 0.46 },
-            { sf: 0.68, dir: -0.75, reach: 0.36 },
-            { sf: 0.74, dir: 0.75, reach: 0.36 },
-            { sf: 0.84, dir: 0, reach: 0 }
-          ];
-          for (const pl of padLevels) {
-            const dx = pl.dir * w * pl.reach;
-            const dy = -h * 0.12;
-            branches.push({
-              startFrac: pl.sf,
-              dx,
-              dy,
-              ctrlX: dx * 0.65,
-              ctrlY: 2,
-              thick: trunkWidth * 0.44
-            });
-            foliage.push({
-              ox: dx,
-              oy: -h * pl.sf + dy,
-              rx: w * (pl.dir === 0 ? 0.34 : 0.26),
-              ry: h * 0.075, // Flatter bonsai/cypress pad silhouette
-              shade: 44 + Math.floor(Math.random() * 18)
-            });
-          }
-        }
-
-        frontTrees.push({
-          x: (cols / frontCount) * (i + 0.5) + (Math.random() - 0.5) * 20,
-          kind,
-          h,
-          w,
-          trunkWidth,
-          trunkCurve,
-          sway: 0,
-          vSway: 0,
-          branches,
-          foliage,
-          barkNotches
-        });
       }
 
-      // 3. Birds Perched High in the Foreground Trees
-      birds = [];
-      for (let i = 0; i < frontTrees.length; i++) {
-        const t = frontTrees[i];
-        birds.push({
-          x: t.x + (Math.random() - 0.5) * 14,
-          y: rows - t.h * 0.74,
+      // 3. Birds hidden ONLY in foliaged ("fir") foreground trees (leafless "bare" trees have no birds)
+      birds = frontTrees
+        .map((t, i) => ({ t, i }))
+        .filter(({ t }) => t.kind === "fir")
+        .map(({ t, i }) => ({
+          x: t.x + t.perch.ox,
+          y: rows - 4 + t.perch.oy,
           vx: 0,
           vy: 0,
           treeIdx: i,
           flying: false,
           wingPhase: Math.random() * Math.PI * 2
-        });
-      }
+        }));
 
-      // 4. 1.5x Larger Forest Plants & Wildflowers
+      // 4. Forest plants & wildflowers
       plants = [];
       const plantCount = Math.max(14, Math.floor(cols / 19));
       const types: Plant["type"][] = ["fern", "flower", "bush"];
@@ -358,11 +448,12 @@ const { height = "560px", dotSize = 3 } = Astro.props;
           size: (9 + Math.random() * 6) * 1.5,
           bend: 0,
           vBend: 0,
-          hasSeeds: type === "flower"
+          hasSeeds: type === "flower",
+          tone: -10 + Math.random() * 24
         });
       }
 
-      // 5. Meadow Grass (Original height: 7..17 cells)
+      // 5. Meadow grass: back blades are light, front blades span dark to mid grey
       grass = [];
       const bladeCount = Math.floor(cols * 1.75);
       for (let i = 0; i < bladeCount; i++) {
@@ -374,7 +465,8 @@ const { height = "560px", dotSize = 3 } = Astro.props;
           vAngle: 0,
           stiff: 0.08 + Math.random() * 0.05,
           layer: isFront ? "front" : "back",
-          phase: Math.random() * Math.PI * 2
+          phase: Math.random() * Math.PI * 2,
+          shade: isFront ? 18 + Math.random() * 52 : 98 + Math.random() * 36
         });
       }
 
@@ -399,14 +491,14 @@ const { height = "560px", dotSize = 3 } = Astro.props;
     ro.observe(wrapper);
     resize();
 
-    function spawnSpores(x: number, y: number, count: number, shade = 20) {
+    function spawnSpores(x: number, y: number, count: number, shade = 60) {
       for (let i = 0; i < count; i++) {
         spores.push({
           x: x + (Math.random() - 0.5) * 6,
           y: y + (Math.random() - 0.5) * 6,
           vx: (Math.random() - 0.3) * 0.45,
           vy: -0.25 - Math.random() * 0.4,
-          shade,
+          shade: Math.max(0, Math.min(255, shade + (Math.random() - 0.5) * 40)),
           life: 0,
           maxLife: 45 + Math.random() * 40
         });
@@ -426,42 +518,45 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 
       const groundY = rows - 4;
 
-      // 1. Shake Foreground Tree Canopies & Scatter Perched Birds
+      // 1. Shake foreground trees & scatter hidden birds (birds only in "fir" trees)
       for (let i = 0; i < frontTrees.length; i++) {
         const t = frontTrees[i];
-        if (Math.abs(cx - t.x) < t.w * 0.55 && cy > groundY - t.h && cy < groundY - t.h * 0.4) {
+        const lowFrac = t.kind === "fir" ? t.foliageStart * 0.9 : 0.4;
+        if (Math.abs(cx - t.x) < t.w * 0.55 && cy > groundY - t.h && cy < groundY - t.h * lowFrac) {
           t.vSway += Math.max(-0.35, Math.min(0.35, pointer.vx * 0.035));
           if (Math.hypot(pointer.vx, pointer.vy) > 1.8) {
-            spawnSpores(cx, cy, 1, 50);
-            for (const b of birds) {
-              if (!b.flying && b.treeIdx === i) {
-                b.flying = true;
-                b.vx = (Math.random() > 0.5 ? 1 : -1) * (0.42 + Math.random() * 0.3);
-                b.vy = -0.42 - Math.random() * 0.25;
+            if (t.kind === "fir") {
+              spawnSpores(cx, cy, 1, 56);
+              for (const b of birds) {
+                if (!b.flying && b.treeIdx === i) {
+                  b.flying = true;
+                  b.vx = (Math.random() > 0.5 ? 1 : -1) * (0.42 + Math.random() * 0.3);
+                  b.vy = -0.42 - Math.random() * 0.25;
+                }
               }
             }
           }
         }
       }
 
-      // 2. Gentle sway on Distant Background Pines
+      // 2. Gentle sway on distant background pines
       for (const bp of backPines) {
         if (Math.abs(cx - bp.x) < bp.w * 0.5 && cy > groundY - bp.h) {
           bp.vSway += Math.max(-0.2, Math.min(0.2, pointer.vx * 0.02));
         }
       }
 
-      // 3. Sweep 1.5x Flowers/Plants & Release Dandelion Spores
+      // 3. Sweep flowers/plants & release dandelion spores
       for (const p of plants) {
         if (Math.abs(cx - p.x) < 12 && cy > groundY - p.size - 8) {
           p.vBend += Math.max(-0.4, Math.min(0.4, pointer.vx * 0.045));
           if (p.hasSeeds && Math.abs(pointer.vx) > 0.8 && Math.random() < 0.45) {
-            spawnSpores(p.x, groundY - p.size, 3, 12);
+            spawnSpores(p.x, groundY - p.size, 3, 70);
           }
         }
       }
 
-      // 4. Sweep Meadow Grass
+      // 4. Sweep meadow grass
       for (const g of grass) {
         const dx = Math.abs(g.x - cx);
         if (dx < 10 && cy > groundY - g.h - 6) {
@@ -483,7 +578,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       const cy = (e.clientY - rect.top) / CELL;
       const groundY = rows - 4;
 
-      // 1. Click on the Stag -> playful bounding trot
+      // 1. Click on the stag -> playful bounding trot
       if (Math.abs(cx - deer.x) < 26 && cy > groundY - 54) {
         deer.state = "trotting";
         const jumpDir = deer.x < cols * 0.5 ? 1 : -1;
@@ -491,11 +586,11 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         deer.targetX = Math.max(45, Math.min(cols - 45, deer.x + jumpDir * (55 + Math.random() * 45)));
         deer.earFlick = 1;
         deer.tailFlick = 1;
-        spawnSpores(deer.x, groundY - 8, 8, 15);
+        spawnSpores(deer.x, groundY - 8, 8, 40);
         return;
       }
 
-      // 2. Click on the Meadow -> sprout a plant that calls the deer over to graze
+      // 2. Click on the meadow -> sprout a plant that calls the deer over to graze
       if (cy > groundY - 55) {
         const clampedX = Math.max(40, Math.min(cols - 40, cx));
         treats.push({ x: clampedX, growth: 0.1 });
@@ -503,13 +598,12 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         deer.targetX = clampedX - (clampedX > deer.x ? mouthReach : -mouthReach);
         deer.dir = clampedX >= deer.x ? 1 : -1;
         deer.state = "walking";
-        spawnSpores(clampedX, groundY - 4, 5, 20);
+        spawnSpores(clampedX, groundY - 4, 5, 50);
       }
     });
 
-    // Draw Distant Background Pine Tree (Far-off misty silhouette: Shade 148..168, low opacity)
+    // Distant background pine (unchanged: misty light-ash grey, low opacity)
     function drawBackPine(c: CanvasRenderingContext2D, bp: BackPine, groundY: number) {
-      // Faint distant trunk
       c.strokeStyle = "rgba(140, 140, 148, 0.45)";
       c.lineWidth = 3.2;
       c.beginPath();
@@ -517,7 +611,6 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.lineTo(bp.x + bp.sway, groundY - bp.h * 0.4);
       c.stroke();
 
-      // Misty conical pine tiers
       for (let i = 0; i < bp.tiers; i++) {
         const frac = i / bp.tiers;
         const tierSway = bp.sway * (1 + i * 0.8);
@@ -539,123 +632,193 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       }
     }
 
-    // Draw Foreground Woodland Tree (Oak, Birch, or High-Crown Scots Pine)
-    // Features flared roots, textured bark trunk, exposed limbs, and high foliage starting ~50% up!
-    function drawFrontTree(c: CanvasRenderingContext2D, t: FrontTree, groundY: number) {
-      const crownHeight = t.h * 0.56;
-      const topTrunkX = t.x + t.trunkCurve + t.sway * 1.5;
-      const topTrunkY = groundY - crownHeight;
-      const midTrunkX = t.x + t.trunkCurve * 0.45 + t.sway * 0.5;
-      const midTrunkY = groundY - crownHeight * 0.5;
+    // Christmas-tree style fir: bare trunk below, stacked jagged tiers from mid-height up
+    function drawFir(c: CanvasRenderingContext2D, t: FrontTree, groundY: number) {
+      const SWAY = 3.2;
+      const lean = (ly: number) => t.sway * SWAY * (ly / t.h);
+      const xAt = (ly: number) => t.x + t.trunkCurve * (ly / t.h) + lean(ly);
 
-      // Helper to evaluate trunk X at any vertical fraction (0 = ground, 0.56 = crown fork)
-      function getTrunkPos(frac: number) {
-        const u = Math.min(1, frac / 0.56);
-        const inv = 1 - u;
-        const x =
-          inv * inv * t.x +
-          2 * inv * u * midTrunkX +
-          u * u * topTrunkX;
-        const y = groundY - t.h * frac;
-        return { x, y };
-      }
+      // --- Trunk (bare for the lower half) ---
+      const trunkTop = t.h * 0.92;
+      const midLy = trunkTop * 0.5;
+      const tw = t.trunkWidth;
+      const topX = xAt(trunkTop);
+      const midX = xAt(midLy);
+      const topY = groundY - trunkTop;
+      const midY = groundY - midLy;
 
-      // 1. Sculpted Tree Trunk with Root Flare & Two-Tone Bark Shading
-      const baseW = t.trunkWidth;
-      const topW = t.trunkWidth * 0.42;
-
-      // Main Bark Fill (Birch has lighter silver-grey bark with dark rim; Oak/Scots have deep charcoal bark)
-      const barkShade = t.kind === "birch" ? 88 : 26;
-      c.fillStyle = `rgba(${barkShade}, ${barkShade}, ${barkShade}, 0.96)`;
+      c.fillStyle = grey(t.barkShade, 0.97);
       c.beginPath();
-      // Left flared root up to crown fork
-      c.moveTo(t.x - baseW * 0.85, groundY);
-      c.quadraticCurveTo(midTrunkX - baseW * 0.38, midTrunkY, topTrunkX - topW * 0.5, topTrunkY);
-      c.lineTo(topTrunkX + topW * 0.5, topTrunkY);
-      // Right side down to flared root
-      c.quadraticCurveTo(midTrunkX + baseW * 0.38, midTrunkY, t.x + baseW * 0.85, groundY);
+      c.moveTo(t.x - tw * 0.95, groundY);
+      c.quadraticCurveTo(midX - tw * 0.4, midY, topX - tw * 0.2, topY);
+      c.lineTo(topX + tw * 0.2, topY);
+      c.quadraticCurveTo(midX + tw * 0.4, midY, t.x + tw * 0.95, groundY);
       c.closePath();
       c.fill();
 
-      // Deep Shadow Bark Edge on Right Side of Trunk for 3D cylindrical volume
-      c.strokeStyle = "rgba(8, 8, 10, 0.98)";
-      c.lineWidth = t.kind === "birch" ? 1.6 : 2.2;
+      c.lineCap = "round";
+      c.lineJoin = "round";
+
+      // Lit left edge
+      c.strokeStyle = grey(t.barkShade + 44, 0.85);
+      c.lineWidth = 1.1;
       c.beginPath();
-      c.moveTo(t.x + baseW * 0.75, groundY);
-      c.quadraticCurveTo(midTrunkX + baseW * 0.34, midTrunkY, topTrunkX + topW * 0.45, topTrunkY);
+      c.moveTo(t.x - tw * 0.7, groundY);
+      c.quadraticCurveTo(midX - tw * 0.3, midY, topX - tw * 0.15, topY);
       c.stroke();
 
-      // Horizontal Bark Notches (Lenticels on Birch, Craggy Bark Ridges on Oak/Pine)
-      c.strokeStyle = "rgba(6, 6, 8, 0.95)";
-      c.lineWidth = t.kind === "birch" ? 1.4 : 1.1;
-      for (const bn of t.barkNotches) {
-        const pos = getTrunkPos(bn.yFrac);
-        const wAtY = baseW * (1 - bn.yFrac) * 0.42;
+      // Shadowed right edge
+      c.strokeStyle = grey(t.barkShade - 22, 0.98);
+      c.lineWidth = 1.7;
+      c.beginPath();
+      c.moveTo(t.x + tw * 0.75, groundY);
+      c.quadraticCurveTo(midX + tw * 0.33, midY, topX + tw * 0.15, topY);
+      c.stroke();
+
+      // Bark ridges on the visible lower trunk
+      c.strokeStyle = grey(t.barkShade - 20, 0.9);
+      c.lineWidth = 1.05;
+      const visibleLy = t.h * t.foliageStart;
+      for (let n = 0; n < 6; n++) {
+        const ly = visibleLy * (0.1 + (n / 6) * 0.85);
+        const side = n % 2 === 0 ? -1 : 1;
+        const x = xAt(ly);
+        const wHere = tw * (1 - (ly / trunkTop) * 0.55) * 0.5;
+        const y = groundY - ly;
         c.beginPath();
-        c.moveTo(pos.x + bn.side * wAtY * 0.2, pos.y);
-        c.lineTo(pos.x + bn.side * wAtY * 0.95, pos.y + (t.kind === "birch" ? 0 : 3.5));
+        c.moveTo(x + side * wHere * 0.2, y);
+        c.lineTo(x + side * wHere * 0.9, y + 3);
         c.stroke();
       }
 
-      // 2. Exposed Primary Boughs / Branches Reaching Out Beneath & Into the High Canopy
-      c.lineCap = "round";
-      for (const br of t.branches) {
-        const origin = getTrunkPos(br.startFrac);
-        const endX = t.x + br.dx + t.sway * 2.4;
-        const endY = groundY - t.h * br.startFrac + br.dy;
-        const ctrlX = origin.x + br.ctrlX + t.sway * 1.2;
-        const ctrlY = origin.y + br.ctrlY;
+      // --- Tiers, bottom to top, each one overlapping the one below ---
+      const N = t.tiers;
+      const F = t.h * (1 - t.foliageStart);
+      const th = F / (1 + 0.58 * (N - 1));
 
-        c.strokeStyle = `rgba(${barkShade - 6}, ${barkShade - 6}, ${barkShade - 6}, 0.96)`;
-        c.lineWidth = br.thick;
-        c.beginPath();
-        c.moveTo(origin.x, origin.y);
-        c.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-        c.stroke();
+      for (let i = 0; i < N; i++) {
+        const baseLy = t.h * t.foliageStart + i * 0.58 * th;
+        const topLy = baseLy + th;
+        const baseY = groundY - baseLy;
+        const apexY = groundY - topLy;
+        const cx = xAt(baseLy);
+        const ax = xAt(topLy);
+        const hw = t.w * 0.5 * (1 - (0.78 * i) / N);
 
-        // Secondary forked twigs at branch tips
-        c.lineWidth = br.thick * 0.55;
-        c.beginPath();
-        c.moveTo(endX, endY);
-        c.lineTo(endX + (br.dx >= 0 ? 7 : -7), endY - 6);
-        c.moveTo(endX, endY);
-        c.lineTo(endX + (br.dx >= 0 ? -4 : 4), endY - 8);
-        c.stroke();
-      }
+        // Tiers get slightly lighter toward the top, with alternating banding
+        const sh = t.foliageShade + (i % 2) * 8 + (i / Math.max(1, N - 1)) * 14;
 
-      // 3. High Canopy Leaf Clusters (Starting well above the ground!)
-      for (const pad of t.foliage) {
-        const px = t.x + pad.ox + t.sway * 2.6;
-        const py = groundY + pad.oy;
-        const sh = pad.shade;
+        const edge = tierEdge(cx, baseY, hw, th);
+        const mid = Math.floor(edge.length / 2);
 
-        // Soft dithered leaf cluster with darker underside and lighter sunlit top
-        const grad = c.createRadialGradient(
-          px - pad.rx * 0.15,
-          py - pad.ry * 0.25,
-          2,
-          px,
-          py,
-          Math.max(pad.rx, pad.ry)
+        // Dark skirt under the tier for depth
+        fillPoly(
+          c,
+          [[ax, apexY + th * 0.4], ...edge.map(([x, y]) => [x, y + th * 0.14] as [number, number])],
+          grey(sh - 30, 0.9)
         );
-        grad.addColorStop(0, `rgba(${sh + 16}, ${sh + 16}, ${sh + 16}, 0.88)`);
-        grad.addColorStop(0.65, `rgba(${sh}, ${sh}, ${sh}, 0.78)`);
-        grad.addColorStop(1, `rgba(${sh - 14}, ${sh - 14}, ${sh - 14}, 0)`);
+        // Shadow side (full silhouette)
+        fillPoly(c, [[ax, apexY], ...edge], grey(sh - 8, 0.95));
+        // Lit left half
+        fillPoly(c, [[ax, apexY], ...edge.slice(mid)], grey(sh + 22, 0.95));
 
-        c.fillStyle = grad;
+        // Bright rim along the left slope
+        c.strokeStyle = grey(sh + 52, 0.7);
+        c.lineWidth = 1;
         c.beginPath();
-        c.ellipse(px, py, pad.rx, pad.ry, 0, 0, Math.PI * 2);
-        c.fill();
+        c.moveTo(ax, apexY);
+        c.lineTo(edge[edge.length - 1][0], edge[edge.length - 1][1]);
+        c.stroke();
+      }
+
+      // Little leader at the tip
+      const tipX = xAt(t.h);
+      c.strokeStyle = grey(t.barkShade + 6, 0.95);
+      c.lineWidth = 1.4;
+      c.beginPath();
+      c.moveTo(tipX, groundY - t.h + 1);
+      c.lineTo(tipX + 0.5, groundY - t.h - 5);
+      c.stroke();
+    }
+
+    // Leafless tree: tapering trunk with a handful of angular limbs
+    function drawBareTree(c: CanvasRenderingContext2D, t: FrontTree, groundY: number) {
+      const SWAY = 3.0;
+      const at = (lx: number, ly: number): [number, number] => [
+        t.x + lx + t.sway * SWAY * (-ly / t.h),
+        groundY + ly
+      ];
+      const pale = t.barkShade > 90;
+
+      const L: [number, number][] = [];
+      const R: [number, number][] = [];
+      for (const p of t.trunk) {
+        const [x, y] = at(p.x, p.y);
+        L.push([x - p.w / 2, y]);
+        R.push([x + p.w / 2, y]);
+      }
+
+      // Trunk body
+      c.fillStyle = grey(t.barkShade, 0.97);
+      c.beginPath();
+      c.moveTo(L[0][0], L[0][1]);
+      for (let i = 1; i < L.length; i++) c.lineTo(L[i][0], L[i][1]);
+      for (let i = R.length - 1; i >= 0; i--) c.lineTo(R[i][0], R[i][1]);
+      c.closePath();
+      c.fill();
+
+      c.lineCap = "round";
+      c.lineJoin = "round";
+
+      // Lit left edge
+      c.strokeStyle = grey(t.barkShade + (pale ? 36 : 40), 0.9);
+      c.lineWidth = 1.1;
+      c.beginPath();
+      c.moveTo(L[0][0] + 0.6, L[0][1]);
+      for (let i = 1; i < L.length; i++) c.lineTo(L[i][0] + 0.5, L[i][1]);
+      c.stroke();
+
+      // Shadowed right edge
+      c.strokeStyle = grey(t.barkShade - (pale ? 62 : 28), 0.97);
+      c.lineWidth = 1.7;
+      c.beginPath();
+      c.moveTo(R[0][0] - 0.7, R[0][1]);
+      for (let i = 1; i < R.length; i++) c.lineTo(R[i][0] - 0.6, R[i][1]);
+      c.stroke();
+
+      // Bark marks: dark dashes on pale trunks, craggy ridges on dark ones
+      c.strokeStyle = grey(pale ? 34 : t.barkShade - 24, 0.95);
+      c.lineWidth = pale ? 1.4 : 1.1;
+      for (const m of t.marks) {
+        const pos = trunkAt(t.trunk, m.u);
+        const [x, y] = at(pos.x, pos.y);
+        c.beginPath();
+        c.moveTo(x + m.side * pos.w * 0.08, y);
+        c.lineTo(x + m.side * pos.w * 0.46, y + (pale ? 0 : 2.5));
+        c.stroke();
+      }
+
+      // Limbs
+      c.strokeStyle = grey(t.barkShade + (pale ? -14 : 12), 0.96);
+      for (const l of t.limbs) {
+        const [x1, y1] = at(l.x1, l.y1);
+        const [x2, y2] = at(l.x2, l.y2);
+        c.lineWidth = l.w;
+        c.beginPath();
+        c.moveTo(x1, y1);
+        c.lineTo(x2, y2);
+        c.stroke();
       }
     }
 
-    // Draw 1.5x Larger Botanical Plants (Ferns, Multi-Petal Wildflowers, Berry Shrubs)
+    // Botanical plants (ferns, wildflowers, berry shrubs) with per-plant shade
     function drawPlant(c: CanvasRenderingContext2D, p: Plant, groundY: number) {
       c.save();
       c.translate(p.x, groundY);
 
       if (p.type === "fern") {
-        c.strokeStyle = "rgba(28, 28, 32, 0.92)";
+        const s = 62 + p.tone;
+        c.strokeStyle = grey(s, 0.92);
         c.lineWidth = 1.35;
         for (let f = -2; f <= 2; f++) {
           const angle = f * 0.34 + p.bend;
@@ -667,7 +830,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
           c.quadraticCurveTo(tipX * 0.5, tipY * 0.8, tipX, tipY);
           c.stroke();
 
-          c.fillStyle = "rgba(22, 22, 26, 0.9)";
+          c.fillStyle = grey(s - 16, 0.9);
           for (let l = 0.3; l <= 0.88; l += 0.2) {
             c.fillRect(tipX * l - 2.1, tipY * l - 0.8, 4.2, 1.6);
           }
@@ -683,7 +846,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         c.fill();
         c.globalCompositeOperation = "source-over";
 
-        c.strokeStyle = "rgba(32, 32, 36, 0.94)";
+        c.strokeStyle = grey(76 + p.tone, 0.94);
         c.lineWidth = 1.45;
         c.beginPath();
         c.moveTo(0, 0);
@@ -694,7 +857,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         c.lineTo(tipX * 0.55 + 4.5, tipY * 0.65 - 3.5);
         c.stroke();
 
-        c.fillStyle = "rgba(10, 10, 12, 0.98)";
+        c.fillStyle = grey(22, 0.98);
         for (let a = 0; a < 5; a++) {
           const ang = (a / 5) * Math.PI * 2 + time * 0.2;
           const px = tipX + Math.cos(ang) * 3.2;
@@ -717,14 +880,14 @@ const { height = "560px", dotSize = 3 } = Astro.props;
           -p.size * 0.38,
           p.size * 0.85
         );
-        g.addColorStop(0, "rgba(48, 48, 54, 0.86)");
-        g.addColorStop(1, "rgba(68, 68, 76, 0)");
+        g.addColorStop(0, grey(80 + p.tone, 0.88));
+        g.addColorStop(1, grey(108 + p.tone, 0));
         c.fillStyle = g;
         c.beginPath();
         c.arc(p.bend * 1.5, -p.size * 0.38, p.size * 0.85, 0, Math.PI * 2);
         c.fill();
 
-        c.fillStyle = "rgba(6, 6, 8, 0.98)";
+        c.fillStyle = grey(20, 0.98);
         c.beginPath();
         c.arc(-3.5, -p.size * 0.52, 1.8, 0, Math.PI * 2);
         c.arc(2.5, -p.size * 0.38, 1.8, 0, Math.PI * 2);
@@ -735,7 +898,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.restore();
     }
 
-    // Update & Draw Anatomically Realistic Stag Deer (at 0.85x = 1.91 Scale)
+    // Update & draw the stag. Geometry unchanged, shades now come from PAL.
     function updateAndDrawDeer(c: CanvasRenderingContext2D, groundY: number) {
       deer.stateTimer--;
       deer.earFlick *= 0.9;
@@ -808,13 +971,12 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         }
       }
 
-      // Draw Realistic Stag Deer (Scale = 1.91, Obsidian Shade 8)
       c.save();
       const bodyBounce = deer.speed > 0 ? Math.abs(Math.sin(deer.walkCycle)) * 1.8 : 0;
       c.translate(deer.x, groundY - bodyBounce);
       c.scale(deer.dir * DEER_SCALE, DEER_SCALE);
 
-      // 1. Crisp Light Separation Halo around the Stag so it stands out against tree trunks
+      // 1. Light halo around the stag so it separates from the trees behind it
       c.globalCompositeOperation = "destination-out";
       const halo = c.createRadialGradient(2, -15, 6, 2, -15, 24);
       halo.addColorStop(0, "rgba(0, 0, 0, 0.85)");
@@ -826,18 +988,17 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.fill();
       c.globalCompositeOperation = "source-over";
 
-      // 2. Realistic 3-Segment Cervid Hind & Fore Legs
+      // 2. Legs (far legs are lighter, near legs dark)
       function drawHindLeg(hipX: number, hipY: number, phaseOffset: number, isNear: boolean) {
         const swing = deer.speed > 0 ? Math.sin(deer.walkCycle + phaseOffset) : 0;
-        const lift = deer.speed > 0 ? Math.max(0, -Math.cos(deer.walkCycle + phaseOffset)) * 3.2 : 0;
+        const lift = deer.speed > 0 ? Math.max(0, Math.cos(deer.walkCycle + phaseOffset)) * 3.2 : 0;
 
         const hockX = hipX - 2.2 + swing * 2.2;
         const hockY = hipY + 6.2 - lift * 0.45;
         const fetlockX = hipX - 1.2 + swing * 4.2;
         const hoofY = -lift;
 
-        const shade = isNear ? 8 : 68;
-        c.strokeStyle = `rgba(${shade}, ${shade}, ${shade}, 0.98)`;
+        c.strokeStyle = grey(isNear ? PAL.deerLegNear : PAL.deerLegFar, 0.98);
         c.lineCap = "round";
         c.lineJoin = "round";
 
@@ -853,7 +1014,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         c.lineTo(fetlockX, hoofY);
         c.stroke();
 
-        c.fillStyle = "rgba(4, 4, 6, 1)";
+        c.fillStyle = grey(PAL.deerHoof);
         c.beginPath();
         c.moveTo(fetlockX - 0.8, hoofY);
         c.lineTo(fetlockX + 1.4, hoofY);
@@ -864,15 +1025,14 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 
       function drawForeLeg(shoulderX: number, shoulderY: number, phaseOffset: number, isNear: boolean) {
         const swing = deer.speed > 0 ? Math.sin(deer.walkCycle + phaseOffset) : 0;
-        const lift = deer.speed > 0 ? Math.max(0, -Math.cos(deer.walkCycle + phaseOffset)) * 3.2 : 0;
+        const lift = deer.speed > 0 ? Math.max(0, Math.cos(deer.walkCycle + phaseOffset)) * 3.2 : 0;
 
         const kneeX = shoulderX + 0.4 + swing * 2.5 + (lift > 0.5 ? 1.2 : 0);
         const kneeY = shoulderY + 5.8 - lift * 0.5;
         const hoofX = shoulderX + 0.2 + swing * 4.6;
         const hoofY = -lift;
 
-        const shade = isNear ? 8 : 68;
-        c.strokeStyle = `rgba(${shade}, ${shade}, ${shade}, 0.98)`;
+        c.strokeStyle = grey(isNear ? PAL.deerLegNear : PAL.deerLegFar, 0.98);
         c.lineCap = "round";
 
         c.lineWidth = isNear ? 2.1 : 1.75;
@@ -887,7 +1047,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         c.lineTo(hoofX, hoofY);
         c.stroke();
 
-        c.fillStyle = "rgba(4, 4, 6, 1)";
+        c.fillStyle = grey(PAL.deerHoof);
         c.beginPath();
         c.moveTo(hoofX - 0.8, hoofY);
         c.lineTo(hoofX + 1.4, hoofY);
@@ -899,8 +1059,8 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       drawHindLeg(-7.2, -11.2, Math.PI, false);
       drawForeLeg(6.0, -11.0, 0, false);
 
-      // 3. Sculpted Stag Torso
-      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      // 3. Torso
+      c.fillStyle = grey(PAL.deerBody, 0.98);
       c.beginPath();
       c.moveTo(-9.8, -12.5);
       c.bezierCurveTo(-8.5, -16.2, -4.5, -16.0, -1.0, -15.4);
@@ -911,7 +1071,8 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.closePath();
       c.fill();
 
-      c.fillStyle = "rgba(58, 58, 64, 0.95)";
+      // Lighter belly
+      c.fillStyle = grey(PAL.deerBelly, 0.95);
       c.beginPath();
       c.moveTo(-4.0, -9.8);
       c.quadraticCurveTo(2.0, -8.5, 7.8, -9.0);
@@ -919,6 +1080,13 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.closePath();
       c.fill();
 
+      // Pale rump patch
+      c.fillStyle = grey(PAL.deerRump, 0.9);
+      c.beginPath();
+      c.ellipse(-8.9, -13.0, 1.3, 2.0, 0.2, 0, Math.PI * 2);
+      c.fill();
+
+      // Dappled spots
       c.globalCompositeOperation = "destination-out";
       c.fillStyle = "rgba(0, 0, 0, 0.88)";
       const spots = [
@@ -942,20 +1110,20 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 
       // 4. Tail
       const tailFlickY = Math.sin(time * 8) * deer.tailFlick * 1.8;
-      c.strokeStyle = "rgba(8, 8, 10, 0.98)";
+      c.strokeStyle = grey(PAL.deerTail, 0.98);
       c.lineWidth = 1.8;
       c.beginPath();
       c.moveTo(-9.4, -14.0);
       c.quadraticCurveTo(-11.5, -13.5 + tailFlickY * 0.5, -12.4, -11.8 + tailFlickY);
       c.stroke();
 
-      // 5. S-Curved Neck, Head, Ears & Multi-Point Antlers
+      // 5. Neck, head, ears & antlers
       const grazeNib = deer.state === "grazing" ? Math.sin(deer.chewPhase) * 0.75 : 0;
       const p = deer.neckProgress;
       const headX = 10.2 + p * 5.8;
       const headY = -24.2 + p * 20.6 + grazeNib;
 
-      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      c.fillStyle = grey(PAL.deerNeck, 0.98);
       c.beginPath();
       c.moveTo(6.0, -15.5);
       c.quadraticCurveTo(7.8 + p * 3.0, -20.5 + p * 9.5, headX - 1.2, headY - 1.2);
@@ -970,7 +1138,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.rotate(headAngle);
 
       const earWiggle = Math.sin(time * 12) * deer.earFlick * 0.25;
-      c.fillStyle = "rgba(55, 55, 62, 0.96)";
+      c.fillStyle = grey(PAL.deerEarBack, 0.96);
       c.beginPath();
       c.moveTo(-0.5, -1.2);
       c.quadraticCurveTo(-2.2, -5.2, -0.2, -6.0);
@@ -980,7 +1148,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 
       c.save();
       c.rotate(earWiggle);
-      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      c.fillStyle = grey(PAL.deerEarFront, 0.98);
       c.beginPath();
       c.moveTo(-0.8, -0.8);
       c.quadraticCurveTo(-4.2, -3.8, -3.4, -5.6);
@@ -990,7 +1158,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.restore();
 
       const chewJaw = deer.state === "grazing" ? Math.max(0, Math.sin(deer.chewPhase * 2)) * 0.45 : 0;
-      c.fillStyle = "rgba(8, 8, 10, 0.98)";
+      c.fillStyle = grey(PAL.deerHead, 0.98);
       c.beginPath();
       c.moveTo(-1.6, -1.0);
       c.quadraticCurveTo(0.5, -2.4, 2.4, -1.5);
@@ -1008,9 +1176,10 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.fill();
       c.globalCompositeOperation = "source-over";
 
+      // Far antler (lighter)
       c.lineCap = "round";
       c.lineJoin = "round";
-      c.strokeStyle = "rgba(52, 52, 58, 0.95)";
+      c.strokeStyle = grey(PAL.deerAntlerFar, 0.95);
       c.lineWidth = 1.05;
       c.beginPath();
       c.moveTo(0.6, -1.8);
@@ -1021,7 +1190,8 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       c.lineTo(-1.5, -11.5);
       c.stroke();
 
-      c.strokeStyle = "rgba(4, 4, 6, 1)";
+      // Near antler (dark)
+      c.strokeStyle = grey(PAL.deerAntlerNear, 1);
       c.lineWidth = 1.35;
       c.beginPath();
       c.moveTo(0.2, -1.6);
@@ -1045,6 +1215,12 @@ const { height = "560px", dotSize = 3 } = Astro.props;
     }
 
     function renderLoop() {
+      // Stop the loop if Astro swapped this footer out of the DOM
+      if (!wrapper.isConnected) {
+        ro.disconnect();
+        return;
+      }
+
       time += 0.025;
 
       offCtx.clearRect(0, 0, cols, rows);
@@ -1052,7 +1228,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       const groundY = rows - 4;
       const ambientWind = 0.22 + Math.sin(time * 0.9) * 0.18;
 
-      // 1. Far Background Pine Treeline (Misty Ash-Grey Shade 148..168)
+      // 1. Far background pine treeline
       for (const bp of backPines) {
         const targetSway = Math.sin(time * 1.2 + bp.x * 0.04) * 0.35 + ambientWind * 0.6;
         bp.vSway += (targetSway - bp.sway) * 0.05;
@@ -1061,16 +1237,17 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         drawBackPine(offCtx, bp, groundY);
       }
 
-      // 2. Foreground Varied Woodland Trees (Oak, Birch, Scots Pine with visible bark & high canopy)
+      // 2. Foreground trees: firs and leafless trees
       for (const t of frontTrees) {
         const targetSway = Math.sin(time * 1.4 + t.x * 0.05) * 0.5 + ambientWind;
         t.vSway += (targetSway - t.sway) * 0.06;
         t.vSway *= 0.88;
         t.sway += t.vSway;
-        drawFrontTree(offCtx, t, groundY);
+        if (t.kind === "fir") drawFir(offCtx, t, groundY);
+        else drawBareTree(offCtx, t, groundY);
       }
 
-      // 3. Flying / Startled Forest Birds (Pitch Black Shade 6)
+      // 3. Startled birds
       for (const b of birds) {
         if (b.flying) {
           b.wingPhase += 0.28;
@@ -1079,7 +1256,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
           b.vy -= 0.004;
 
           const flap = Math.sin(b.wingPhase) * 3.2;
-          offCtx.strokeStyle = "rgba(6, 6, 8, 0.98)";
+          offCtx.strokeStyle = grey(PAL.bird, 0.98);
           offCtx.lineWidth = 1.4;
           offCtx.beginPath();
           offCtx.moveTo(b.x - 3.6, b.y - flap);
@@ -1090,13 +1267,13 @@ const { height = "560px", dotSize = 3 } = Astro.props;
           if (b.y < -8 || b.x < -10 || b.x > cols + 10) {
             const t = frontTrees[b.treeIdx];
             b.flying = false;
-            b.x = t.x + (Math.random() - 0.5) * 12;
-            b.y = groundY - t.h * 0.74;
+            b.x = t.x + t.perch.ox;
+            b.y = groundY + t.perch.oy;
           }
         }
       }
 
-      // 4. Back Layer Meadow Grass (Pewter Grey Shade 105) & 1.5x Plants
+      // 4. Back-layer grass (light) & plants
       for (const g of grass) {
         const target = Math.sin(time * 2.2 + g.x * 0.07 + g.phase) * 0.22 + ambientWind * 0.4;
         g.vAngle += (target - g.angle) * g.stiff;
@@ -1104,7 +1281,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         g.angle += g.vAngle;
 
         if (g.layer === "back") {
-          offCtx.strokeStyle = "rgba(105, 105, 112, 0.72)";
+          offCtx.strokeStyle = grey(g.shade, 0.72);
           offCtx.lineWidth = 0.95;
           offCtx.beginPath();
           offCtx.moveTo(g.x, groundY + 1);
@@ -1126,17 +1303,17 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         drawPlant(offCtx, p, groundY);
       }
 
-      // User-clicked Sprouts on the Ground
+      // User-clicked sprouts
       for (const tr of treats) {
         tr.growth = Math.min(1, tr.growth + 0.06);
         const h = 14 * tr.growth;
-        offCtx.strokeStyle = "rgba(15, 15, 18, 0.96)";
+        offCtx.strokeStyle = grey(PAL.sprout, 0.96);
         offCtx.lineWidth = 1.4;
         offCtx.beginPath();
         offCtx.moveTo(tr.x, groundY);
         offCtx.lineTo(tr.x, groundY - h);
         offCtx.stroke();
-        offCtx.fillStyle = "rgba(6, 6, 8, 0.98)";
+        offCtx.fillStyle = grey(PAL.sproutLeaf, 0.98);
         offCtx.beginPath();
         offCtx.arc(tr.x - 2.8, groundY - h, 2.4, 0, Math.PI * 2);
         offCtx.arc(tr.x + 2.8, groundY - h, 2.4, 0, Math.PI * 2);
@@ -1144,16 +1321,19 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         offCtx.fill();
       }
 
-      // 5. Realistic Stag Deer (0.85x = 1.91 scale)
+      // 5. Stag
       updateAndDrawDeer(offCtx, groundY);
 
-      // 6. Foreground Meadow Grass Layer (Deep Ink Shade 14, original height)
-      offCtx.fillStyle = "rgba(18, 18, 22, 0.94)";
+      // 6. Ground strip + front grass (dark to mid grey)
+      const ground = offCtx.createLinearGradient(0, groundY, 0, rows);
+      ground.addColorStop(0, grey(PAL.groundTop, 0.94));
+      ground.addColorStop(1, grey(PAL.groundBottom, 0.96));
+      offCtx.fillStyle = ground;
       offCtx.fillRect(0, groundY, cols, rows - groundY);
 
       for (const g of grass) {
         if (g.layer !== "front") continue;
-        offCtx.strokeStyle = "rgba(14, 14, 18, 0.96)";
+        offCtx.strokeStyle = grey(g.shade, 0.96);
         offCtx.lineWidth = 1.1;
         offCtx.beginPath();
         offCtx.moveTo(g.x, groundY + 2);
@@ -1166,19 +1346,19 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         offCtx.stroke();
       }
 
-      // 7. Floating Monochrome Spores
+      // 7. Floating spores
       for (let i = spores.length - 1; i >= 0; i--) {
         const s = spores[i];
         s.x += s.vx + ambientWind * 0.25;
         s.y += s.vy + Math.sin(time * 3 + i) * 0.08;
         s.life++;
         const alpha = Math.max(0, 1 - s.life / s.maxLife);
-        offCtx.fillStyle = `rgba(${s.shade}, ${s.shade}, ${s.shade}, ${alpha * 0.95})`;
+        offCtx.fillStyle = grey(s.shade, alpha * 0.95);
         offCtx.fillRect(s.x, s.y, 1.6, 1.6);
         if (s.life >= s.maxLife) spores.splice(i, 1);
       }
 
-      // 8. Monochrome Shade-Aware Bayer Dither Pass onto Transparent Main Canvas
+      // 8. Shade-aware Bayer dither pass onto the main canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const data = offCtx.getImageData(0, 0, cols, rows).data;
       const dotSize = CELL - 1;

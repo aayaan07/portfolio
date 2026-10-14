@@ -1,28 +1,34 @@
 ---
-// Stack / Tech Marquee Section - 3 Rows with Icons8 icons
+// Stack / Tech Marquee Section - Categorized into 3 distinct rows
+// Row 1: Languages & Databases
 const row1Skills = [
   { name: 'Python', icon: '/icons/icons8-python-100.png' },
-  { name: 'C', icon: '/icons/icons8-c-programming-100.png' },
   { name: 'JavaScript', icon: '/icons/icons8-javascript-100.png' },
+  { name: 'C', icon: '/icons/icons8-c-programming-100.png' },
   { name: 'HTML', icon: '/icons/icons8-html-5-100.png' },
   { name: 'CSS', icon: '/icons/icons8-css3-100.png' },
   { name: 'SQL', icon: '/icons/icons8-database-100.png' },
   { name: 'PostgreSQL', icon: '/icons/icons8-postgresql-100.png' },
+  { name: 'Supabase', icon: '/icons/icons8-supabase-100.png' },
 ];
 
+// Row 2: Libraries, Frameworks & Packages
 const row2Skills = [
   { name: 'React', icon: '/icons/icons8-react-100.png' },
   { name: 'Next.js', icon: '/icons/icons8-next.js-100.png' },
   { name: 'Node.js', icon: '/icons/icons8-node-js-100.png' },
   { name: 'Tailwind CSS', icon: '/icons/icons8-tailwindcss-100.png' },
   { name: 'Vite', icon: '/icons/icons8-vite-100.png' },
+  { name: 'Firebase', icon: '/icons/icons8-firebase-100.png' },
   { name: 'Git', icon: '/icons/icons8-git-100.png' },
   { name: 'GitHub', icon: '/icons/icons8-github-100.png' },
 ];
 
+// Row 3: Platforms, Tools & AI / Extra
 const row3Skills = [
-  { name: 'Firebase', icon: '/icons/icons8-firebase-100.png' },
-  { name: 'Supabase', icon: '/icons/icons8-supabase-100.png' },
+  { name: 'ChatGPT', icon: '/icons/icons8-chatgpt-100.png' },
+  { name: 'Claude', icon: '/icons/icons8-claude-100.png' },
+  { name: 'Antigravity', icon: '/icons/antigravity.png' },
   { name: 'AWS', icon: '/icons/icons8-amazon-web-services-100.png' },
   { name: 'Azure', icon: '/icons/icons8-azure-100.png' },
   { name: 'Linux', icon: '/icons/icons8-linux-100.png' },
@@ -48,6 +54,7 @@ const row3Skills = [
         {[...row1Skills, ...row1Skills, ...row1Skills, ...row1Skills].map((skill) => (
           <div
             aria-label={skill.name}
+            data-stack-card
             class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
           >
             <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
@@ -65,6 +72,7 @@ const row3Skills = [
         {[...row2Skills, ...row2Skills, ...row2Skills, ...row2Skills].map((skill) => (
           <div
             aria-label={skill.name}
+            data-stack-card
             class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
           >
             <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
@@ -82,6 +90,7 @@ const row3Skills = [
         {[...row3Skills, ...row3Skills, ...row3Skills, ...row3Skills].map((skill) => (
           <div
             aria-label={skill.name}
+            data-stack-card
             class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
           >
             <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
@@ -96,3 +105,21 @@ const row3Skills = [
     </div>
   </div>
 </section>
+
+<script>
+  import { playTapSound } from '../utils/sound';
+
+  function setupStackSounds() {
+    const cards = document.querySelectorAll<HTMLElement>('[data-stack-card]');
+    cards.forEach((card) => {
+      if (card.dataset.soundBound) return;
+      card.dataset.soundBound = 'true';
+      card.addEventListener('pointerenter', () => {
+        playTapSound(0.4);
+      }, { passive: true });
+    });
+  }
+
+  setupStackSounds();
+  document.addEventListener('astro:page-load', setupStackSounds);
+</script>

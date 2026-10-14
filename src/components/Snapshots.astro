@@ -1,113 +1,264 @@
 ---
-// Polaroid Snapshots Section
-const photos = [
-  {
-    caption: 'bali!!',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCANAmqEBWNTKmk9LiRJ2z7j7Hh8YtBmXdFnnjw2ADeahczDL7Ilaq02k_EzEESrTkN_RanG1sUpSqBje8eSIePMfp8Mm9Ed1UZJVkyw3MPfsTI4R2AKCSQeBJ2NlLyR7eVkTfjUgZ9xagZR967nsLTcbX3P_xM_6DYf0Wlh12ZsRtVZY7ILBoewAXt1HA35hE90_kQtMGEsxUa8Rr8MeaZNO4Hc772BeKORi7epsNj6eq_67hhjmlq',
-    rotation: '-2.5deg',
-  },
-  {
-    caption: 'bookies',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCWUGvy0Ya0OJqJHM6rA4fUb8U-vpXSff9tthFd3tYFPH2MzQK0JHoox7B7q27muw7wFyEdSqM4sXX-OAob7fIcaoi0ZGNC7NfwkfKwrP2pIs7CWJnqWDDEWQUq2C1hU6BmyJKxLFUhdDegJVrfw3p-CCgIlsHYPycH6yi_UHg0ldaMB_v0ULA05_dMkGdLg3qeNuIWq_ZMfXeYFtEao5Qr_gl8hSHBt-SYPDxXeCmmLFjiMqp42PRL',
-    rotation: '1.8deg',
-  },
-  {
-    caption: 'beach :3',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDmcxb2rimLEucXJ3OnoxU_vpuMSuCNEk6sqcSMuMqRgd164m8cznN6UoL7F8y2eRDaeXpNTdaupR_mdGuScastJbo_3p0mpTM2gvH4LHIZ_F5HsBLp5UqomU_5iLV2hj7FckB7zYKLxwsKzA9gLCkQOMlj_ZA_iCwspYJMkC3Ug6-bEx0LOnJezxBPqNkFpaY3DK4NQ3VxvCYHRdpAE3Hi2iG7fPdyd3GftXmLPrf0-Gt23P7W9nMi',
-    rotation: '-1.5deg',
-  },
-  {
-    caption: 'gang',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBrEGdfRrxZ1_2b_6P9rc1UOLpATGlC2fVXp2sw_6V2wLoBMNcac3m9MIwuDvBbSnqQRi0RDygTB02v5hTZCW3hyj0BWR81lEDoGkJeBbwH--cQJMHhWYPipXEg46Filht01zJ4f4mmNLXeLu84f2Otn5sDOk7ntEYTrvt2yMITjQu2ggkKO6av226CwWUWgBKJ8gIfSNCv2NuepQHohvdljCGjxPPDWE_HmkvqKZFw8aBqOMK2RLol',
-    rotation: '2.4deg',
-  },
+// Snapshots Section - 3-Column Masonry Gallery with Randomized Photos & Progressive 2-Row Reveal
+const shots = [
+  { src: '/shots/img-1.webp', alt: 'Snapshot 1' },
+  { src: '/shots/IMG_20260208_152037.webp', alt: 'Snapshot 2' },
+  { src: '/shots/IMG_20260208_152238.webp', alt: 'Snapshot 3' },
+  { src: '/shots/IMG_20260208_152402.webp', alt: 'Snapshot 4' },
+  { src: '/shots/IMG_20260308_102313.webp', alt: 'Snapshot 5' },
+  { src: '/shots/IMG_20260308_102350.webp', alt: 'Snapshot 6' },
+  { src: '/shots/IMG_20260308_102353.webp', alt: 'Snapshot 7' },
+  { src: '/shots/IMG_20260314_182116.webp', alt: 'Snapshot 8' },
+  { src: '/shots/IMG_20260530_155317.webp', alt: 'Snapshot 9' },
+  { src: '/shots/IMG_20260721_184810.webp', alt: 'Snapshot 10' },
+  { src: '/shots/IMG_20260808_175752.webp', alt: 'Snapshot 11' },
+  { src: '/shots/IMG_20260808_175854.webp', alt: 'Snapshot 12' },
+  { src: '/shots/IMG_20260808_175859.webp', alt: 'Snapshot 13' },
+  { src: '/shots/IMG_20260811_181523.webp', alt: 'Snapshot 14' },
+  { src: '/shots/IMG_20260811_182439.webp', alt: 'Snapshot 15' },
+  { src: '/shots/IMG_20260827_185049.webp', alt: 'Snapshot 16' },
+  { src: '/shots/IMG_20260913_174305.webp', alt: 'Snapshot 17' },
+  { src: '/shots/IMG_20260913_174319.webp', alt: 'Snapshot 18' },
+  { src: '/shots/IMG_20260913_174334.webp', alt: 'Snapshot 19' },
+  { src: '/shots/IMG_20260926_175845.webp', alt: 'Snapshot 20' },
+  { src: '/shots/IMG_20260926_180533.webp', alt: 'Snapshot 21' },
+  { src: '/shots/IMG_20260926_180540.webp', alt: 'Snapshot 22' },
+  { src: '/shots/IMG_20260926_180547.webp', alt: 'Snapshot 23' },
+  { src: '/shots/IMG_20260926_180753.webp', alt: 'Snapshot 24' },
 ];
+
+// Initial randomized order on render
+const shuffledShots = [...shots].sort(() => Math.random() - 0.5);
 ---
 
 <section class="py-[2.5rem] flex flex-col gap-[1.5rem]" data-gsap="snapshots">
   <div class="flex items-end justify-between">
     <div class="flex flex-col">
-      <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted uppercase">Photographs & Memories</span>
+      <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted uppercase">Visual Journal</span>
       <h2 class="text-[24px] leading-[32px] tracking-[-0.02em] font-semibold text-text-primary">Snapshots</h2>
     </div>
   </div>
-  <div class="w-full overflow-x-auto pb-6 pt-4 px-3 sm:px-4 -mx-3 sm:-mx-4">
-    <div class="flex items-center justify-start sm:justify-center gap-3 sm:gap-4 min-w-max py-2">
-      {photos.map(photo => (
-        <div
-          class="polaroid-card cursor-pointer bg-white p-2.5 pb-4 sm:p-3 sm:pb-5 rounded-[4px] border border-neutral-200/90 w-[150px] sm:w-[165px] flex flex-col items-center hover:!rotate-0"
-          style={`rotate: ${photo.rotation}`}
-          data-caption={photo.caption}
-          data-full={photo.img}
-        >
-          <div class="w-full aspect-square overflow-hidden bg-neutral-100 rounded-[2px] shadow-inner">
-            <img class="w-full h-full object-cover" alt={photo.caption} src={photo.img} />
+
+  <!-- Masonry Gallery Container with Progressive View More -->
+  <div id="snapshots-wrapper" class="relative w-full pb-[90px] transition-[padding] duration-500">
+    <!-- 3-Column Masonry Grid -->
+    <div
+      id="snapshots-masonry"
+      class="columns-1 sm:columns-2 md:columns-3 gap-3 sm:gap-4 [column-fill:_balance]"
+    >
+      {shuffledShots.map((shot, index) => {
+        // Initial SSR visibility: 2 on mobile (<640px), 6 (2 rows) on desktop (>=640px)
+        const initialVisibility =
+          index < 2 ? '' : index < 6 ? 'hidden sm:block' : 'hidden';
+
+        return (
+          <div
+            class={`snapshot-item break-inside-avoid mb-3 sm:mb-4 group cursor-pointer relative overflow-hidden rounded-xl border border-neutral-200/80 bg-neutral-100 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-neutral-400/80 transition-all duration-300 ${initialVisibility}`}
+            data-index={index}
+            data-src={shot.src}
+          >
+            <img
+              src={shot.src}
+              alt={shot.alt}
+              loading={index < 2 ? "eager" : "lazy"}
+              class="w-full h-auto object-cover block group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+            />
           </div>
-          <span class="font-[Caveat,cursive] text-[22px] sm:text-[24px] text-neutral-900 mt-2 sm:mt-2.5 font-bold tracking-wide select-none">{photo.caption}</span>
-        </div>
-      ))}
+        );
+      })}
+    </div>
+
+    <!-- Gradient Fade Overlay with View More Button (shifted 90px downside) -->
+    <div
+      id="snapshots-fade-overlay"
+      class="absolute bottom-0 left-0 right-0 h-48 sm:h-56 pointer-events-none flex items-end justify-center pb-5 transition-all duration-500"
+      style="background: linear-gradient(to bottom, rgba(250, 250, 250, 0) 0%, rgba(250, 250, 250, 0.7) 35%, #FAFAFA 68%, #FAFAFA 100%);"
+    >
+      <button
+        id="snapshots-view-more-btn"
+        type="button"
+        class="pointer-events-auto inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#171717] text-white text-[13px] leading-[18px] tracking-[0.01em] font-medium border border-neutral-800 shadow-[0_4px_16px_rgba(0,0,0,0.18)] hover:bg-black hover:scale-[1.03] active:scale-[0.97] transition-all cursor-pointer select-none"
+      >
+        <span>View More</span>
+        <span class="material-symbols-outlined text-[18px] transition-transform duration-200">
+          expand_more
+        </span>
+      </button>
     </div>
   </div>
 </section>
 
-<!-- Lightbox Modal -->
-<div aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300" id="polaroid-modal" role="dialog">
-  <div class="relative max-w-[90vw] max-h-[85vh] bg-white p-4 sm:p-5 pb-8 sm:pb-9 rounded shadow-2xl flex flex-col items-center transform scale-95 transition-transform duration-300" id="polaroid-modal-card">
-    <button aria-label="Close photo preview" class="absolute -top-3.5 -right-3.5 sm:-top-4 sm:-right-4 w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shadow-lg hover:bg-neutral-800 focus:outline-none" id="polaroid-modal-close">
-      <span class="material-symbols-outlined text-[18px]">close</span>
+<!-- Lightbox Modal for Enlarged Photo Preview (Pure Image View, No Text Details) -->
+<div
+  id="snapshots-modal"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Photo Preview"
+>
+  <div
+    id="snapshots-modal-card"
+    class="relative max-w-[92vw] max-h-[90vh] bg-transparent rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center transform scale-95 transition-transform duration-300"
+  >
+    <button
+      id="snapshots-modal-close"
+      type="button"
+      aria-label="Close photo preview"
+      class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black transition-colors cursor-pointer shadow-lg"
+    >
+      <span class="material-symbols-outlined text-[20px]">close</span>
     </button>
-    <div class="relative w-auto max-h-[65vh] overflow-hidden rounded-[2px] bg-neutral-900 flex items-center justify-center">
-      <img alt="Enlarged photo" class="max-h-[65vh] w-auto max-w-full object-contain" id="polaroid-modal-img" src="" />
+
+    <div class="relative w-auto max-h-[85vh] flex items-center justify-center rounded-2xl overflow-hidden border border-neutral-700/60 shadow-2xl bg-black">
+      <img
+        id="snapshots-modal-img"
+        src=""
+        alt="Enlarged snapshot"
+        class="max-h-[85vh] w-auto max-w-full object-contain block"
+      />
     </div>
-    <span class="font-[Caveat,cursive] text-[32px] sm:text-[36px] text-neutral-900 font-bold mt-4 tracking-wide select-none" id="polaroid-modal-caption"></span>
   </div>
 </div>
 
-<script>
-  // Polaroid Lightbox
-  const modal = document.getElementById('polaroid-modal');
-  const modalCard = document.getElementById('polaroid-modal-card');
-  const modalImg = document.getElementById('polaroid-modal-img') as HTMLImageElement;
-  const modalCaption = document.getElementById('polaroid-modal-caption');
-  const modalClose = document.getElementById('polaroid-modal-close');
-  const polaroidCards = document.querySelectorAll('.polaroid-card');
-
-  function openModal(fullSrc: string, caption: string) {
-    if (!modal || !modalImg || !modalCaption) return;
-    modalImg.src = fullSrc;
-    modalCaption.textContent = caption;
-    modal.classList.remove('opacity-0', 'pointer-events-none');
-    modalCard?.classList.remove('scale-95');
-    modalCard?.classList.add('scale-100');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeModal() {
-    if (!modal) return;
-    modal.classList.add('opacity-0', 'pointer-events-none');
-    modalCard?.classList.remove('scale-100');
-    modalCard?.classList.add('scale-95');
-    document.body.style.overflow = '';
-    setTimeout(() => {
-      if (modalImg) modalImg.src = '';
-    }, 300);
-  }
-
-  polaroidCards.forEach(card => {
-    card.addEventListener('click', () => {
-      const fullSrc = card.getAttribute('data-full');
-      const caption = card.getAttribute('data-caption') || '';
-      if (fullSrc) openModal(fullSrc, caption);
-    });
-  });
-
-  modalClose?.addEventListener('click', closeModal);
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal && !modal.classList.contains('opacity-0')) {
-      closeModal();
+<style>
+  @keyframes snapshot-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
     }
-  });
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-snapshot-fade {
+    animation: snapshot-fade-in 450ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+</style>
+
+<script>
+  function setupSnapshotsGallery() {
+    const wrapper = document.getElementById('snapshots-wrapper');
+    const masonry = document.getElementById('snapshots-masonry');
+    const viewMoreBtn = document.getElementById('snapshots-view-more-btn');
+    const fadeOverlay = document.getElementById('snapshots-fade-overlay');
+
+    if (!masonry) return;
+
+    // Lightbox modal elements
+    const modal = document.getElementById('snapshots-modal');
+    const modalCard = document.getElementById('snapshots-modal-card');
+    const modalImg = document.getElementById('snapshots-modal-img') as HTMLImageElement;
+    const modalClose = document.getElementById('snapshots-modal-close');
+
+    const items = Array.from(masonry.querySelectorAll<HTMLElement>('.snapshot-item'));
+    if (items.length === 0) return;
+
+    // Always randomize images first (Fisher-Yates shuffle)
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    // Responsive initial count: 2 on mobile (<640px), 6 (2 rows) on desktop (>=640px)
+    const isMobileQuery = window.matchMedia('(max-width: 639px)');
+    let visibleCount = isMobileQuery.matches ? 2 : 6;
+
+    const applyVisibility = (animateFrom = -1) => {
+      items.forEach((item, index) => {
+        item.classList.remove('sm:block');
+        if (index < visibleCount) {
+          item.classList.remove('hidden');
+          if (animateFrom >= 0 && index >= animateFrom) {
+            item.classList.add('animate-snapshot-fade');
+          }
+        } else {
+          item.classList.add('hidden');
+          item.classList.remove('animate-snapshot-fade');
+        }
+        masonry.appendChild(item);
+      });
+
+      if (viewMoreBtn && fadeOverlay) {
+        if (visibleCount >= items.length) {
+          fadeOverlay.classList.add('opacity-0', 'pointer-events-none');
+          wrapper?.classList.remove('pb-[90px]');
+          setTimeout(() => {
+            fadeOverlay.style.display = 'none';
+          }, 400);
+        } else {
+          wrapper?.classList.add('pb-[90px]');
+          fadeOverlay.style.display = 'flex';
+          fadeOverlay.classList.remove('opacity-0', 'pointer-events-none');
+        }
+      }
+    };
+
+    applyVisibility();
+
+    // Progressive "View More" click handler: reveals 2 on mobile, 6 (2 rows) on desktop
+    if (viewMoreBtn && fadeOverlay) {
+      viewMoreBtn.onclick = () => {
+        const batchSize = isMobileQuery.matches ? 2 : 6;
+        const prevCount = visibleCount;
+        visibleCount = Math.min(items.length, visibleCount + batchSize);
+        applyVisibility(prevCount);
+      };
+    }
+
+    // Viewport resize/orientation change listener
+    isMobileQuery.addEventListener('change', (e) => {
+      if (!e.matches && visibleCount < 6) {
+        visibleCount = 6;
+        applyVisibility();
+      }
+    });
+
+    // Lightbox modal functions
+    function openModal(src: string) {
+      if (!modal || !modalImg) return;
+      modalImg.src = src;
+
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modalCard?.classList.remove('scale-95');
+      modalCard?.classList.add('scale-100');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      if (!modal) return;
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modalCard?.classList.remove('scale-100');
+      modalCard?.classList.add('scale-95');
+      document.body.style.overflow = '';
+      setTimeout(() => {
+        if (modalImg) modalImg.src = '';
+      }, 300);
+    }
+
+    // Attach click listeners to all snapshot cards
+    items.forEach((item) => {
+      item.onclick = () => {
+        const src = item.dataset.src || '';
+        if (src) openModal(src);
+      };
+    });
+
+    if (modalClose) modalClose.onclick = closeModal;
+    if (modal) {
+      modal.onclick = (e) => {
+        if (e.target === modal) closeModal();
+      };
+    }
+
+    document.onkeydown = (e) => {
+      if (e.key === 'Escape' && modal && !modal.classList.contains('opacity-0')) {
+        closeModal();
+      }
+    };
+  }
+
+  setupSnapshotsGallery();
+  document.addEventListener('astro:page-load', setupSnapshotsGallery);
 </script>
