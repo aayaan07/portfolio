@@ -52,6 +52,8 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 </style>
 
 <script>
+  import { playTapSound } from '../utils/sound';
+
   const BAYER_8X8 = [
     [ 0, 32,  8, 40,  2, 34, 10, 42],
     [48, 16, 56, 24, 50, 18, 58, 26],
@@ -319,9 +321,23 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       wingPhase: number;
     }
 
-    interface SproutTreat {
+    interface Ripple {
       x: number;
-      growth: number;
+      y: number;
+      r: number;
+      alpha: number;
+      shade: number;
+    }
+
+    interface Sparkle {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      size: number;
+      life: number;
+      maxLife: number;
+      shade: number;
     }
 
     let backPines: BackPine[] = [];
@@ -329,6 +345,8 @@ const { height = "560px", dotSize = 3 } = Astro.props;
     let plants: Plant[] = [];
     let grass: GrassBlade[] = [];
     let spores: Spore[] = [];
+    let ripples: Ripple[] = [];
+    let sparkles: Sparkle[] = [];
     let birds: PerchedBird[] = [];
     let treats: SproutTreat[] = [];
 
@@ -519,6 +537,23 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       }
     }
 
+    function spawnSparkles(x: number, y: number, count = 8) {
+      for (let i = 0; i < count; i++) {
+        const ang = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.45;
+        const spd = 0.45 + Math.random() * 0.95;
+        sparkles.push({
+          x,
+          y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 0.25,
+          size: 1.1 + Math.random() * 1.5,
+          life: 0,
+          maxLife: 26 + Math.floor(Math.random() * 20),
+          shade: 35 + Math.floor(Math.random() * 45)
+        });
+      }
+    }
+
     // Pointer Interactions
     canvas.addEventListener("pointermove", (e) => {
       const rect = canvas.getBoundingClientRect();
@@ -592,6 +627,12 @@ const { height = "560px", dotSize = 3 } = Astro.props;
       const cx = (e.clientX - rect.left) / CELL;
       const cy = (e.clientY - rect.top) / CELL;
       const groundY = rows - 4;
+
+      playTapSound(0.45);
+
+      // Trigger sparkle and expanding ripple effect on click
+      ripples.push({ x: cx, y: cy, r: 2, alpha: 0.85, shade: 45 });
+      spawnSparkles(cx, cy, 9);
 
       // 1. Click on the stag -> playful bounding trot
       if (Math.abs(cx - deer.x) < 26 && cy > groundY - 54) {
@@ -1371,6 +1412,42 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         offCtx.fillStyle = grey(s.shade, alpha * 0.95);
         offCtx.fillRect(s.x, s.y, 1.6, 1.6);
         if (s.life >= s.maxLife) spores.splice(i, 1);
+      }
+
+      // 7.5. Click ripples and sparkles
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i];
+        rp.r += 0.65;
+        rp.alpha *= 0.92;
+        offCtx.strokeStyle = `rgba(${rp.shade}, ${rp.shade}, ${rp.shade}, ${rp.alpha})`;
+        offCtx.lineWidth = 1.2;
+        offCtx.beginPath();
+        offCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+        offCtx.stroke();
+        if (rp.alpha < 0.05) ripples.splice(i, 1);
+      }
+
+      for (let i = sparkles.length - 1; i >= 0; i--) {
+        const sp = sparkles[i];
+        sp.x += sp.vx;
+        sp.y += sp.vy;
+        sp.vx *= 0.94;
+        sp.vy *= 0.94;
+        sp.life++;
+        const prog = sp.life / sp.maxLife;
+        const alpha = Math.sin(prog * Math.PI) * 0.95;
+        const s = sp.size * (1 - prog * 0.35);
+
+        offCtx.strokeStyle = `rgba(${sp.shade}, ${sp.shade}, ${sp.shade}, ${alpha})`;
+        offCtx.lineWidth = 0.9;
+        offCtx.beginPath();
+        offCtx.moveTo(sp.x - s, sp.y);
+        offCtx.lineTo(sp.x + s, sp.y);
+        offCtx.moveTo(sp.x, sp.y - s);
+        offCtx.lineTo(sp.x, sp.y + s);
+        offCtx.stroke();
+
+        if (sp.life >= sp.maxLife) sparkles.splice(i, 1);
       }
 
       // 8. Shade-aware Bayer dither pass onto the main canvas

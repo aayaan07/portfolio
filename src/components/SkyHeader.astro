@@ -250,6 +250,7 @@ const { height = "210px", dotSize = 3 } = Astro.props;
       // 2. Grab 1.4x Cloud
       for (const c of clouds) {
         if (Math.abs(cx - c.x) < c.rx && Math.abs(cy - c.y) < c.ry * 1.5) {
+          playTapSound(0.38);
           draggedCloud = c;
           c.dragging = true;
           canvas.style.cursor = "grabbing";
@@ -258,6 +259,7 @@ const { height = "210px", dotSize = 3 } = Astro.props;
       }
 
       // 3. Click open sky -> attract birds
+      playTapSound(0.42);
       ripples.push({ x: cx, y: cy, r: 2, alpha: 0.75, shade: 80 });
       for (const b of birds) {
         b.targetX = cx + (Math.random() - 0.5) * 28;

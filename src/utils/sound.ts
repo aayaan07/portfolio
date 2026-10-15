@@ -41,8 +41,45 @@ function getFallbackAudio(): HTMLAudioElement {
   return a;
 }
 
-export function playTapSound(volume = 0.45) {
+let isSoundMuted = false;
+
+if (typeof window !== 'undefined') {
+  try {
+    isSoundMuted = localStorage.getItem('portfolio_sound_muted') === 'true';
+  } catch {
+    isSoundMuted = false;
+  }
+}
+
+export function isMuted(): boolean {
+  if (typeof window === 'undefined') return false;
+  return isSoundMuted;
+}
+
+export function toggleSound(): boolean {
+  if (typeof window === 'undefined') return false;
+  isSoundMuted = !isSoundMuted;
+  try {
+    localStorage.setItem('portfolio_sound_muted', isSoundMuted ? 'true' : 'false');
+  } catch {}
+  window.dispatchEvent(new CustomEvent('sound-toggle', { detail: { muted: isSoundMuted } }));
+  if (!isSoundMuted) {
+    playTapSound(0.45);
+  }
+  return isSoundMuted;
+}
+
+export function setMuted(muted: boolean) {
   if (typeof window === 'undefined') return;
+  isSoundMuted = muted;
+  try {
+    localStorage.setItem('portfolio_sound_muted', isSoundMuted ? 'true' : 'false');
+  } catch {}
+  window.dispatchEvent(new CustomEvent('sound-toggle', { detail: { muted: isSoundMuted } }));
+}
+
+export function playTapSound(volume = 0.45) {
+  if (typeof window === 'undefined' || isSoundMuted) return;
 
   // 1. Zero-latency Web Audio API
   if (audioCtx && soundBuffer) {

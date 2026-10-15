@@ -1,5 +1,11 @@
 ---
 // Hero / Intro Section
+const navLinks = [
+  { name: 'Projects', href: '#projects', icon: 'layers' },
+  { name: 'Experience', href: '#experience', icon: 'work' },
+  { name: 'Snapshots', href: '#snapshots', icon: 'photo_camera' },
+  { name: 'CTA', href: '#cta', icon: 'send' },
+];
 ---
 
 <section class="pb-[2.5rem] pt-[0.25rem] flex flex-col gap-[1.5rem]" data-gsap="hero">
@@ -40,5 +46,105 @@
     <p class="text-[17px] leading-[28px] tracking-[-0.01em] text-on-surface-variant max-w-[640px]" data-hero-elem>
       Second-year computer science student architecting resilient web systems, authoring open-source tooling, and sculpting tactile design languages. I care deeply about 60fps micro-interactions, type scale precision, and zero-compromise developer ergonomics.
     </p>
+
+    <!-- Quick Section Navigation Bar (Tactile pill styling matching site's visual language) -->
+    <nav aria-label="Quick section navigation" class="pt-5 sm:pt-6 flex justify-center w-full" data-hero-elem>
+      <div class="inline-flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-full bg-white/95 backdrop-blur-sm border border-neutral-200/80 shadow-[0_2px_0_#e5e7eb,0_4px_14px_rgba(0,0,0,0.03)] select-none max-w-full">
+        {navLinks.map((link) => (
+          <a
+            href={link.href}
+            class="hero-nav-btn tactile-btn group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] leading-[18px] font-medium text-text-muted hover:text-text-primary hover:bg-neutral-100/80 active:translate-y-[1px] transition-all duration-150 cursor-pointer"
+            aria-label={`Scroll to ${link.name}`}
+          >
+            <span class="material-symbols-outlined text-[15px] text-neutral-400 group-hover:text-text-primary transition-colors">
+              {link.icon}
+            </span>
+            <span>{link.name}</span>
+          </a>
+        ))}
+
+        <!-- Divider -->
+        <span class="w-[1px] h-3.5 bg-neutral-200 mx-0.5 sm:mx-1 self-center select-none" aria-hidden="true"></span>
+
+        <!-- Tap Sound Toggle Button with Pulsing Emerald Live Indicator -->
+        <button
+          id="sound-toggle-btn"
+          type="button"
+          class="hero-nav-btn tactile-btn group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] leading-[18px] font-medium text-text-muted hover:text-text-primary hover:bg-neutral-100/80 active:translate-y-[1px] transition-all duration-150 cursor-pointer"
+          aria-label="Toggle tap sound effects"
+          title="Toggle tap sound"
+        >
+          <span
+            id="sound-toggle-icon"
+            class="material-symbols-outlined text-[15px] text-neutral-400 group-hover:text-text-primary transition-colors"
+          >
+            volume_up
+          </span>
+          <span id="sound-toggle-label" class="transition-colors">Sound</span>
+        </button>
+      </div>
+    </nav>
   </div>
 </section>
+
+<script>
+  import { playTapSound, isMuted, toggleSound } from '../utils/sound';
+
+  function setupHeroNav() {
+    // 1. Navigation link click sounds
+    const navLinks = document.querySelectorAll<HTMLElement>('.hero-nav-btn');
+    navLinks.forEach((btn) => {
+      if (btn.dataset.soundBound === 'true') return;
+      btn.dataset.soundBound = 'true';
+      btn.addEventListener('click', () => {
+        playTapSound(0.45);
+      });
+    });
+
+    // 2. Sound toggle button
+    const toggleBtn = document.getElementById('sound-toggle-btn');
+    const toggleIcon = document.getElementById('sound-toggle-icon');
+    const toggleLabel = document.getElementById('sound-toggle-label');
+
+    function updateSoundUi(muted: boolean) {
+      if (!toggleIcon || !toggleLabel) return;
+      if (muted) {
+        toggleIcon.textContent = 'volume_off';
+        toggleIcon.classList.add('text-neutral-400');
+        toggleIcon.classList.remove('text-text-primary');
+        toggleLabel.textContent = 'Muted';
+        toggleLabel.classList.add('text-neutral-400');
+        toggleLabel.classList.remove('text-text-primary');
+      } else {
+        toggleIcon.textContent = 'volume_up';
+        toggleIcon.classList.remove('text-neutral-400');
+        toggleIcon.classList.add('text-text-primary');
+        toggleLabel.textContent = 'Sound';
+        toggleLabel.classList.remove('text-neutral-400');
+        toggleLabel.classList.add('text-text-primary');
+      }
+    }
+
+    // Initial state sync
+    updateSoundUi(isMuted());
+
+    if (toggleBtn && !toggleBtn.dataset.toggleBound) {
+      toggleBtn.dataset.toggleBound = 'true';
+      toggleBtn.addEventListener('click', () => {
+        const nowMuted = toggleSound();
+        updateSoundUi(nowMuted);
+      });
+    }
+
+    // Listen for external sound-toggle events
+    window.addEventListener('sound-toggle', ((e: CustomEvent<{ muted: boolean }>) => {
+      if (e.detail) {
+        updateSoundUi(e.detail.muted);
+      }
+    }) as EventListener);
+  }
+
+  setupHeroNav();
+  document.addEventListener('astro:page-load', setupHeroNav);
+</script>
+
