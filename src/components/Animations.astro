@@ -61,6 +61,19 @@
   function initAnimations() {
     if (typeof window === 'undefined') return;
 
+    // If welcome loader is active, wait for it to finish and fade out before starting entrance animations
+    const welcomeLoader = document.getElementById('welcome-loader');
+    if (welcomeLoader && welcomeLoader.dataset.done !== 'true' && welcomeLoader.style.display !== 'none') {
+      window.addEventListener(
+        'welcome-loader-finished',
+        () => {
+          initAnimations();
+        },
+        { once: true }
+      );
+      return;
+    }
+
     cleanupAnimations();
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
