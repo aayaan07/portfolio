@@ -1,14 +1,22 @@
 ---
 // Footer
+const initialTime = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Kolkata',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+}).format(new Date()) + ' IST';
 ---
 
 <footer class="w-full max-w-[760px] mx-auto px-[1.25rem] md:px-[2rem] py-[4rem]">
   <div class="pt-[2.5rem] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[1.5rem] border-t border-neutral-200/80">
     <div class="flex flex-col gap-[0.25rem]">
       <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         <span class="text-[13px] leading-[18px] tracking-[0.01em] font-medium text-text-primary">Gurugram, India</span>
-        <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted">· Local Time</span>
+        <span class="text-[11px] leading-[16px] tracking-[0.04em] font-semibold text-text-muted">
+          · <span id="gurugram-time">{initialTime}</span>
+        </span>
       </div>
       <p class="text-[13px] leading-[20px] text-text-muted">© 2026 Aayaan Kumar. Crafted with restraint.</p>
     </div>
@@ -24,3 +32,26 @@
     </div>
   </div>
 </footer>
+
+<script>
+  function updateGurugramTime() {
+    const timeEl = document.getElementById('gurugram-time');
+    if (!timeEl) return;
+    try {
+      const now = new Date();
+      const timeString = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }).format(now);
+      timeEl.textContent = `${timeString} IST`;
+    } catch {
+      // Keep existing SSR text on error
+    }
+  }
+
+  updateGurugramTime();
+  setInterval(updateGurugramTime, 1000);
+  document.addEventListener('astro:page-load', updateGurugramTime);
+</script>

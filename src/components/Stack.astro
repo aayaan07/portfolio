@@ -50,57 +50,63 @@ const row3Skills = [
     <div class="pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-canvas to-transparent z-20"></div>
     <div class="flex flex-col gap-3.5 sm:gap-4 overflow-visible py-1">
       <!-- Row 1: Leftward -->
-      <div class="animate-marquee-left flex items-center gap-3 sm:gap-4">
-        {[...row1Skills, ...row1Skills, ...row1Skills, ...row1Skills].map((skill) => (
-          <div
-            aria-label={skill.name}
-            data-stack-card
-            class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
-          >
-            <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
-            <!-- Attached tiny hint popup -->
-            <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
-              <span>{skill.name}</span>
-              <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+      <div class="marquee-row-wrapper overflow-visible">
+        <div class="animate-marquee-left flex items-center gap-3 sm:gap-4">
+          {[...row1Skills, ...row1Skills, ...row1Skills, ...row1Skills].map((skill) => (
+            <div
+              aria-label={skill.name}
+              data-stack-card
+              class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
+            >
+              <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
+              <!-- Attached tiny hint popup -->
+              <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
+                <span>{skill.name}</span>
+                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <!-- Row 2: Rightward -->
-      <div class="animate-marquee-right flex items-center gap-3 sm:gap-4">
-        {[...row2Skills, ...row2Skills, ...row2Skills, ...row2Skills].map((skill) => (
-          <div
-            aria-label={skill.name}
-            data-stack-card
-            class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
-          >
-            <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
-            <!-- Attached tiny hint popup -->
-            <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
-              <span>{skill.name}</span>
-              <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+      <div class="marquee-row-wrapper overflow-visible">
+        <div class="animate-marquee-right flex items-center gap-3 sm:gap-4">
+          {[...row2Skills, ...row2Skills, ...row2Skills, ...row2Skills].map((skill) => (
+            <div
+              aria-label={skill.name}
+              data-stack-card
+              class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
+            >
+              <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
+              <!-- Attached tiny hint popup -->
+              <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
+                <span>{skill.name}</span>
+                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <!-- Row 3: Leftward (alt speed) -->
-      <div class="animate-marquee-left-alt flex items-center gap-3 sm:gap-4">
-        {[...row3Skills, ...row3Skills, ...row3Skills, ...row3Skills].map((skill) => (
-          <div
-            aria-label={skill.name}
-            data-stack-card
-            class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
-          >
-            <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
-            <!-- Attached tiny hint popup -->
-            <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
-              <span>{skill.name}</span>
-              <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+      <div class="marquee-row-wrapper overflow-visible">
+        <div class="animate-marquee-left-alt flex items-center gap-3 sm:gap-4">
+          {[...row3Skills, ...row3Skills, ...row3Skills, ...row3Skills].map((skill) => (
+            <div
+              aria-label={skill.name}
+              data-stack-card
+              class="relative group/skill hover:z-40 tactile-light-btn w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white border border-neutral-200/80 flex items-center justify-center flex-shrink-0 cursor-pointer"
+            >
+              <img src={skill.icon} alt={skill.name} class="w-8 h-8 sm:w-9 sm:h-9 object-contain select-none" loading="lazy" />
+              <!-- Attached tiny hint popup -->
+              <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/skill:opacity-100 group-hover/skill:-translate-y-1 transition-all duration-150 z-50 px-2.5 py-1 rounded-md bg-[#171717] text-white text-[11px] font-medium tracking-tight shadow-md whitespace-nowrap border border-neutral-700/80 select-none">
+                <span>{skill.name}</span>
+                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#171717] rotate-45 border-r border-b border-neutral-700/80"></span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   </div>

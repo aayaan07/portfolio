@@ -1,5 +1,5 @@
 ---
-// GSAP Animations - loaded client-side
+// GSAP Entrance Animations - Luxurious Hero Reveal & Lag-Free Compositor Gallery
 ---
 
 <script>
@@ -8,186 +8,537 @@
 
   gsap.registerPlugin(ScrollTrigger);
 
-  // Smooth defaults
-  gsap.defaults({
-    ease: 'power3.out',
-    duration: 0.75,
-  });
+  let gsapCtx: gsap.Context | null = null;
+  let resizeObserver: ResizeObserver | null = null;
+  let resizeTimer: number | undefined;
 
-  // Hero entrance animation
-  const heroText = document.querySelector('[data-gsap="hero-text"]');
-  if (heroText) {
-    gsap.from(heroText.children, {
-      y: 25,
-      opacity: 0,
-      duration: 0.85,
-      stagger: 0.12,
-      ease: 'power3.out',
-      clearProps: 'all',
-    });
-  }
+  const SMOOTH_EASE = 'expo.out';
+  const SNAPPIER_EASE = 'power3.out';
 
-  const heroButtons = document.querySelector('[data-gsap="hero-buttons"]');
-  if (heroButtons) {
-    gsap.from(heroButtons.children, {
-      y: 18,
-      opacity: 0,
-      duration: 0.6,
-      stagger: 0.08,
-      delay: 0.35,
-      ease: 'power2.out',
-      clearProps: 'all',
-    });
-  }
-
-  // Section Headings Reveal
-  const sectionHeadings = document.querySelectorAll('section h2');
-  sectionHeadings.forEach(heading => {
-    gsap.from(heading, {
-      scrollTrigger: {
-        trigger: heading,
-        start: 'top 90%',
-        toggleActions: 'play none none none',
+  /**
+   * Promotes elements to GPU layers right before animation starts
+   * and cleans up inline styles immediately upon completion.
+   */
+  function withGpuAcceleration(
+    vars: gsap.TweenVars,
+    useBlur = true
+  ): gsap.TweenVars {
+    return {
+      ...vars,
+      force3D: true,
+      onStart() {
+        const targets = this.targets() as HTMLElement[];
+        targets.forEach((el) => {
+          el.style.willChange = useBlur
+            ? 'transform, opacity, filter'
+            : 'transform, opacity';
+        });
       },
-      y: 20,
-      opacity: 0,
-      duration: 0.6,
-      clearProps: 'all',
-    });
-  });
-
-  // Stack marquee rows
-  const stack = document.querySelector('[data-gsap="stack"]');
-  if (stack) {
-    const marqueeRows = stack.querySelectorAll('.animate-marquee-left, .animate-marquee-right, .animate-marquee-left-alt');
-    gsap.from(marqueeRows, {
-      scrollTrigger: {
-        trigger: stack,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
+      onComplete() {
+        const targets = this.targets() as HTMLElement[];
+        targets.forEach((el) => {
+          el.style.willChange = 'auto';
+          gsap.set(el, { clearProps: 'filter,opacity,transform' });
+        });
       },
-      opacity: 0,
-      y: 20,
-      duration: 0.8,
-      stagger: 0.12,
-      clearProps: 'opacity,transform',
-    });
+    };
   }
 
-  // Selected Work cards - animate each card individually so both projects are clearly visible
-  const workCards = document.querySelectorAll('.work-card');
-  workCards.forEach((card, index) => {
-    gsap.from(card, {
-      scrollTrigger: {
-        trigger: card,
-        start: 'top 88%',
-        toggleActions: 'play none none none',
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power3.out',
-      clearProps: 'all',
-    });
-  });
-
-  // Experience timeline items
-  const experienceSection = document.querySelector('[data-gsap="experience"]');
-  if (experienceSection) {
-    const roles = experienceSection.querySelectorAll('.group');
-    roles.forEach(role => {
-      gsap.from(role, {
-        scrollTrigger: {
-          trigger: role,
-          start: 'top 90%',
-          toggleActions: 'play none none none',
-        },
-        y: 25,
-        opacity: 0,
-        duration: 0.6,
-        clearProps: 'all',
-      });
-    });
-  }
-
-  // Games grid items
-  const gamesSection = document.querySelector('[data-gsap="games"]');
-  if (gamesSection) {
-    const gameItems = gamesSection.querySelectorAll('.group');
-    gsap.from(gameItems, {
-      scrollTrigger: {
-        trigger: gamesSection,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-      },
-      y: 30,
-      opacity: 0,
-      duration: 0.65,
-      stagger: 0.08,
-      ease: 'power3.out',
-      clearProps: 'all',
-    });
-  }
-
-  // Snapshots polaroids
-  const snapshotsSection = document.querySelector('[data-gsap="snapshots"]');
-  if (snapshotsSection) {
-    const polaroids = snapshotsSection.querySelectorAll('.polaroid-card');
-    gsap.from(polaroids, {
-      scrollTrigger: {
-        trigger: snapshotsSection,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      stagger: 0.1,
-      ease: 'power3.out',
-      clearProps: 'opacity,transform',
-    });
-  }
-
-  // Spotify soundtrack card
-  const spotifySection = document.querySelector('[data-gsap="spotify"]');
-  if (spotifySection) {
-    const spotifyIframe = spotifySection.querySelector('iframe');
-    if (spotifyIframe) {
-      gsap.from(spotifyIframe, {
-        scrollTrigger: {
-          trigger: spotifyIframe,
-          start: 'top 90%',
-          toggleActions: 'play none none none',
-        },
-        y: 20,
-        opacity: 0,
-        duration: 0.7,
-        ease: 'power3.out',
-        clearProps: 'all',
-      });
+  function cleanupAnimations() {
+    if (gsapCtx) {
+      gsapCtx.revert();
+      gsapCtx = null;
+    }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+    if (resizeTimer) {
+      window.clearTimeout(resizeTimer);
     }
   }
 
-  // Contact CTA block
-  const cta = document.querySelector('[data-gsap="cta"]');
-  if (cta) {
-    gsap.from(cta, {
-      scrollTrigger: {
-        trigger: cta,
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-      },
-      y: 40,
-      opacity: 0,
-      scale: 0.98,
-      duration: 0.8,
-      ease: 'power3.out',
-      clearProps: 'all',
+  function initAnimations() {
+    if (typeof window === 'undefined') return;
+
+    cleanupAnimations();
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    ScrollTrigger.config({
+      ignoreMobileResize: true,
+    });
+
+    gsapCtx = gsap.context(() => {
+      // ----------------------------------------------------
+      // Section 1 & 2: Hero & Stack Sequential Hierarchy (Extended Duration)
+      // ----------------------------------------------------
+      const heroElements = gsap.utils.toArray<HTMLElement>('[data-hero-elem]');
+      const stackSection = document.querySelector<HTMLElement>('[data-gsap="stack"]');
+      const stackHeader = stackSection?.firstElementChild as HTMLElement | null;
+      const marqueeRowWrappers = stackSection?.querySelectorAll<HTMLElement>('.marquee-row-wrapper');
+      const marqueeContainer =
+        stackSection?.querySelector<HTMLElement>('.relative.w-full.overflow-hidden') || stackSection;
+
+      const isAtPageTop = window.scrollY < 80;
+      const headerRect = stackHeader ? stackHeader.getBoundingClientRect() : null;
+      const isStackHeaderInViewOnLoad =
+        isAtPageTop && headerRect && headerRect.top < window.innerHeight * 0.92;
+
+      if (isStackHeaderInViewOnLoad) {
+        const loadTl = gsap.timeline({ delay: 0.08 });
+
+        if (heroElements.length > 0) {
+          loadTl.from(
+            heroElements,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(10px)',
+              y: 24,
+              duration: 1.3, // Longer, more cinematic hero reveal
+              stagger: 0.16, // Deliberate breathing room between each hero item
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+
+        if (stackHeader) {
+          loadTl.from(
+            stackHeader,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(8px)',
+              y: 20,
+              duration: 1.15,
+              ease: SMOOTH_EASE,
+            }),
+            '-=0.65' // Smoothly catches the tail end of the hero description
+          );
+        }
+      } else {
+        if (heroElements.length > 0) {
+          gsap.from(
+            heroElements,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(10px)',
+              y: 24,
+              duration: 1.3,
+              stagger: 0.16,
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+
+        if (stackHeader) {
+          gsap.from(
+            stackHeader,
+            withGpuAcceleration({
+              scrollTrigger: {
+                trigger: stackHeader,
+                start: 'top 90%',
+                once: true,
+              },
+              opacity: 0,
+              filter: 'blur(8px)',
+              y: 20,
+              duration: 1.1,
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+      }
+
+      // Stack Marquee Card Rows
+      if (marqueeRowWrappers && marqueeRowWrappers.length > 0) {
+        gsap.from(
+          marqueeRowWrappers,
+          withGpuAcceleration({
+            scrollTrigger: {
+              trigger: marqueeContainer,
+              start: 'top 88%',
+              once: true,
+            },
+            opacity: 0,
+            filter: 'blur(6px)',
+            y: 20,
+            duration: 0.95,
+            stagger: 0.1,
+            ease: SMOOTH_EASE,
+          })
+        );
+      }
+
+      // ----------------------------------------------------
+      // Section 3: Selected Work
+      // ----------------------------------------------------
+      const workSection = document.querySelector<HTMLElement>('[data-gsap="work"]');
+      if (workSection) {
+        const workHeader = workSection.firstElementChild as HTMLElement | null;
+        if (workHeader) {
+          gsap.from(
+            workHeader,
+            withGpuAcceleration({
+              scrollTrigger: {
+                trigger: workHeader,
+                start: 'top 88%',
+                once: true,
+              },
+              opacity: 0,
+              filter: 'blur(8px)',
+              y: 16,
+              duration: 0.9,
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+
+        const workCards = gsap.utils.toArray<HTMLElement>(
+          workSection.querySelectorAll('.work-card')
+        );
+        workCards.forEach((card) => {
+          gsap.from(
+            card,
+            withGpuAcceleration({
+              scrollTrigger: {
+                trigger: card,
+                start: 'top 86%',
+                once: true,
+              },
+              opacity: 0,
+              filter: 'blur(6px)',
+              y: 24,
+              scale: 0.985,
+              duration: 0.95,
+              ease: SMOOTH_EASE,
+            })
+          );
+        });
+      }
+
+      // ----------------------------------------------------
+      // Section 4: Experience
+      // ----------------------------------------------------
+      const expSection = document.querySelector<HTMLElement>('[data-gsap="experience"]');
+      if (expSection) {
+        const expHeader = expSection.firstElementChild as HTMLElement | null;
+        const expRoles = expSection.querySelectorAll<HTMLElement>('.group');
+
+        const expTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: expSection,
+            start: 'top 85%',
+            once: true,
+          },
+        });
+
+        if (expHeader) {
+          expTl.from(
+            expHeader,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(8px)',
+              y: 16,
+              duration: 0.9,
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+
+        if (expRoles.length > 0) {
+          expTl.from(
+            expRoles,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(6px)',
+              y: 16,
+              duration: 0.85,
+              stagger: 0.08,
+              ease: SMOOTH_EASE,
+            }),
+            '-=0.55'
+          );
+        }
+      }
+
+      // ----------------------------------------------------
+      // Section 5: Games I Have Played
+      // ----------------------------------------------------
+      const gamesSection = document.querySelector<HTMLElement>('[data-gsap="games"]');
+      if (gamesSection) {
+        const gamesHeader = gamesSection.firstElementChild as HTMLElement | null;
+        const gameRows = gamesSection.querySelectorAll<HTMLElement>('.game-row');
+
+        const gamesTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: gamesSection,
+            start: 'top 85%',
+            once: true,
+          },
+        });
+
+        if (gamesHeader) {
+          gamesTl.from(
+            gamesHeader,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(8px)',
+              y: 16,
+              duration: 0.9,
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+
+        if (gameRows.length > 0) {
+          gamesTl.from(
+            gameRows,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(5px)',
+              y: 14,
+              x: -6,
+              duration: 0.8,
+              stagger: 0.05,
+              ease: SMOOTH_EASE,
+            }),
+            '-=0.55'
+          );
+        }
+      }
+
+      // ----------------------------------------------------
+      // Section 6: Snapshots (Unified, Column-Wise Staggered Entrance)
+      // Header and columns animate on one coordinated timeline with zero lag
+      // ----------------------------------------------------
+      const snapshotsSection = document.querySelector<HTMLElement>('[data-gsap="snapshots"]');
+      if (snapshotsSection) {
+        const snapHeader = snapshotsSection.firstElementChild as HTMLElement | null;
+        const allShots = Array.from(
+          snapshotsSection.querySelectorAll<HTMLElement>('.snapshot-item')
+        );
+        const visibleShots = allShots.filter(
+          (el) => window.getComputedStyle(el).display !== 'none'
+        );
+        const snapOverlay = snapshotsSection.querySelector<HTMLElement>('#snapshots-fade-overlay');
+
+        // Group visible images by column (based on horizontal offset)
+        const columnsMap = new Map<number, HTMLElement[]>();
+        visibleShots.forEach((shot) => {
+          const left = Math.round(shot.offsetLeft);
+          let matchedKey: number | null = null;
+          for (const existingLeft of columnsMap.keys()) {
+            if (Math.abs(existingLeft - left) < 15) {
+              matchedKey = existingLeft;
+              break;
+            }
+          }
+          const key = matchedKey !== null ? matchedKey : left;
+          if (!columnsMap.has(key)) {
+            columnsMap.set(key, []);
+          }
+          columnsMap.get(key)!.push(shot);
+        });
+
+        // Sort columns left-to-right, and sort cards inside each column top-to-bottom
+        const columns = Array.from(columnsMap.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([_, items]) => items.sort((a, b) => a.offsetTop - b.offsetTop));
+
+        // Single coordinated timeline: removes the delay between title and images
+        const snapTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: snapshotsSection,
+            start: 'top 92%', // Triggers early as soon as the section enters the viewport
+            once: true,
+          },
+        });
+
+        if (snapHeader) {
+          snapTl.from(
+            snapHeader,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(8px)',
+              y: 16,
+              duration: 0.6,
+              ease: SMOOTH_EASE,
+            })
+          );
+          // Images start immediately with only a 150ms micro-gap after header begins
+          snapTl.addLabel('imagesStart', '-=0.45');
+        } else {
+          snapTl.addLabel('imagesStart', 0);
+        }
+
+        // Stagger column-wise: Left Column -> Middle Column -> Right Column
+        if (columns.length > 0) {
+          columns.forEach((colCards, colIdx) => {
+            snapTl.from(
+              colCards,
+              withGpuAcceleration(
+                {
+                  opacity: 0,
+                  filter: 'blur(8px)',
+                  y: 18,
+                  scale: 0.98,
+                  duration: 0.6,
+                  stagger: 0.08, // inside each column: top card -> bottom card
+                  ease: SNAPPIER_EASE,
+                },
+                true
+              ),
+              colIdx === 0 ? 'imagesStart' : `imagesStart+=${colIdx * 0.12}`
+            );
+          });
+        }
+
+        if (snapOverlay) {
+          snapTl.from(
+            snapOverlay,
+            withGpuAcceleration(
+              {
+                opacity: 0,
+                y: 10,
+                duration: 0.45,
+                ease: SNAPPIER_EASE,
+              },
+              false
+            ),
+            '-=0.2'
+          );
+        }
+      }
+
+      // ----------------------------------------------------
+      // Section 7: Spotify
+      // ----------------------------------------------------
+      const spotifySection = document.querySelector<HTMLElement>('[data-gsap="spotify"]');
+      if (spotifySection) {
+        const spotifyHeader = spotifySection.firstElementChild as HTMLElement | null;
+        const spotifyIframe = spotifySection.querySelector<HTMLElement>('#spotify-iframe');
+
+        const spotifyTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: spotifySection,
+            start: 'top 88%',
+            once: true,
+          },
+        });
+
+        if (spotifyHeader) {
+          spotifyTl.from(
+            spotifyHeader,
+            withGpuAcceleration({
+              opacity: 0,
+              filter: 'blur(8px)',
+              y: 16,
+              duration: 0.9,
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+
+        if (spotifyIframe) {
+          spotifyTl.from(
+            spotifyIframe,
+            withGpuAcceleration(
+              {
+                opacity: 0,
+                y: 18,
+                scale: 0.985,
+                duration: 0.9,
+                ease: SMOOTH_EASE,
+              },
+              false
+            ),
+            '-=0.55'
+          );
+        }
+      }
+
+      // ----------------------------------------------------
+      // Section 8: Contact CTA
+      // ----------------------------------------------------
+      const cta = document.querySelector<HTMLElement>('[data-gsap="cta"]');
+      if (cta) {
+        gsap.from(
+          cta,
+          withGpuAcceleration({
+            scrollTrigger: {
+              trigger: cta,
+              start: 'top 94%',
+              once: true,
+            },
+            opacity: 0,
+            filter: 'blur(8px)',
+            scale: 0.98,
+            y: 20,
+            duration: 0.95,
+            ease: SMOOTH_EASE,
+          })
+        );
+      }
+
+      // ----------------------------------------------------
+      // Section 9: Footer
+      // ----------------------------------------------------
+      const footer = document.querySelector<HTMLElement>('footer');
+      if (footer) {
+        const footerContent = footer.firstElementChild as HTMLElement | null;
+        if (footerContent) {
+          gsap.from(
+            footerContent,
+            withGpuAcceleration({
+              scrollTrigger: {
+                trigger: footer,
+                start: 'top 96%',
+                once: true,
+              },
+              opacity: 0,
+              filter: 'blur(6px)',
+              y: 14,
+              duration: 0.85,
+              ease: SMOOTH_EASE,
+            })
+          );
+        }
+      }
+    });
+
+    // ----------------------------------------------------
+    // Debounced Layout Sync
+    // ----------------------------------------------------
+    const scheduleRefresh = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 150);
+    };
+
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(scheduleRefresh);
+      resizeObserver.observe(document.body);
+    }
+
+    document.querySelectorAll<HTMLElement>('img, iframe').forEach((media) => {
+      if (media instanceof HTMLImageElement && media.complete) return;
+      media.addEventListener('load', scheduleRefresh, { once: true });
     });
   }
 
-  // Refresh ScrollTrigger after assets/fonts load
-  window.addEventListener('load', () => {
-    ScrollTrigger.refresh();
-  });
+  if ('onastro:page-load' in document) {
+    document.addEventListener('astro:page-load', initAnimations);
+  } else {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAnimations, { once: true });
+    } else {
+      initAnimations();
+    }
+    document.addEventListener('astro:page-load', initAnimations);
+  }
+
+  document.addEventListener('astro:before-swap', cleanupAnimations);
 </script>
