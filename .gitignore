@@ -29,3 +29,6 @@ design/
 CLAUDE.md 
 AGENTS.md 
 .vscode/
+
+*.zip
+
