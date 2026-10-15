@@ -28,12 +28,26 @@ const { height = "560px", dotSize = 3 } = Astro.props;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+    cursor: -webkit-image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto !important;
+    cursor: image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto !important;
   }
 
   .forest-canvas {
     display: block;
     width: 100%;
     height: 100%;
+    cursor: -webkit-image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto !important;
+    cursor: image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto !important;
+  }
+
+  .forest-canvas[style*="cursor: pointer"],
+  .forest-canvas[style*="cursor:pointer"],
+  .forest-canvas[style*="cursor: grab"],
+  .forest-canvas[style*="cursor:grab"],
+  .forest-canvas[style*="cursor: grabbing"],
+  .forest-canvas[style*="cursor:grabbing"] {
+    cursor: -webkit-image-set(url('/hand-pointer.png') 1x, url('/hand-pointer@2x.png') 2x) 6 1, url('/hand-pointer.png') 6 1, pointer !important;
+    cursor: image-set(url('/hand-pointer.png') 1x, url('/hand-pointer@2x.png') 2x) 6 1, url('/hand-pointer.png') 6 1, pointer !important;
   }
 </style>
 
@@ -570,6 +584,7 @@ const { height = "560px", dotSize = 3 } = Astro.props;
 
     canvas.addEventListener("pointerleave", () => {
       pointer.active = false;
+      canvas.style.cursor = "default";
     });
 
     canvas.addEventListener("pointerdown", (e) => {

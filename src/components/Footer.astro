@@ -8,8 +8,60 @@ const initialTime = new Intl.DateTimeFormat('en-US', {
 }).format(new Date()) + ' IST';
 ---
 
-<footer class="w-full max-w-[760px] mx-auto px-[1.25rem] md:px-[2rem] py-[4rem]">
-  <div class="pt-[2.5rem] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[1.5rem] border-t border-neutral-200/80">
+<footer class="w-full max-w-[760px] mx-auto px-[1.25rem] md:px-[2rem] pt-[3rem] pb-[4rem] flex flex-col gap-[1.75rem]">
+  <!-- Activity & Engagement Bar -->
+  <div class="flex flex-row items-center justify-between gap-3 pt-6 border-t border-neutral-200/80">
+    <!-- View Counter Pill -->
+    <div
+      id="views-pill"
+      class="tactile-pill inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-neutral-200/80 text-[12px] leading-[18px] text-text-muted select-none transition-colors"
+      title="Live site views via CounterAPI"
+    >
+      <span class="material-symbols-outlined text-[15px] text-neutral-400 select-none">visibility</span>
+      <span class="text-[11px] font-semibold tracking-wider uppercase text-text-muted">Views</span>
+      <span
+        id="view-count"
+        class="font-semibold text-text-primary font-mono tabular-nums text-[12px] min-w-[20px] inline-flex items-center justify-center"
+      >
+        <span class="inline-block w-5 h-3 bg-neutral-200/60 rounded-xs animate-pulse"></span>
+      </span>
+    </div>
+
+    <!-- Like Counter Button -->
+    <div class="relative inline-flex items-center">
+      <button
+        id="like-btn"
+        type="button"
+        class="tactile-light-btn group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-neutral-200/80 text-[12px] leading-[18px] font-medium text-text-primary transition-all duration-150 cursor-pointer select-none active:scale-95"
+        title="Like this portfolio"
+        aria-label="Like this portfolio"
+      >
+        <span
+          id="like-icon"
+          class="material-symbols-outlined text-[16px] text-neutral-400 group-hover:text-rose-500 transition-all duration-200"
+        >favorite</span>
+        <span id="like-label" class="text-text-muted group-hover:text-text-primary transition-colors">Like</span>
+        <span
+          id="like-count"
+          class="font-semibold text-text-primary font-mono tabular-nums text-[12px] min-w-[16px] inline-flex items-center justify-center"
+        >
+          <span class="inline-block w-4 h-3 bg-neutral-200/60 rounded-xs animate-pulse"></span>
+        </span>
+      </button>
+
+      <!-- Feedback Toast -->
+      <div
+        id="like-toast"
+        role="status"
+        class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 -translate-y-1 transition-all duration-200 ease-out px-2.5 py-0.5 rounded-md bg-neutral-900 text-white text-[11px] font-medium tracking-wide whitespace-nowrap shadow-md z-30"
+      >
+        Liked! ❤️
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Details: Gurugram, India · Time & Icons8 credit -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[1.5rem] pt-1">
     <div class="flex flex-col gap-[0.25rem]">
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -33,7 +85,52 @@ const initialTime = new Intl.DateTimeFormat('en-US', {
   </div>
 </footer>
 
+<style>
+  .icon-fill-active {
+    font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 20 !important;
+  }
+
+  .like-active {
+    border-color: rgba(251, 113, 133, 0.5) !important;
+    background-color: rgba(255, 241, 242, 0.75) !important;
+    box-shadow: 0 2.5px 0 #fecdd3, 0 4px 8px rgba(244, 63, 94, 0.08), inset 0 1px 0 #ffffff !important;
+  }
+  .like-active:hover {
+    box-shadow: 0 3.5px 0 #fda4af, 0 6px 10px rgba(244, 63, 94, 0.12), inset 0 1px 0 #ffffff !important;
+  }
+  .like-active:active {
+    box-shadow: 0 1px 0 #fecdd3, 0 2px 4px rgba(244, 63, 94, 0.08), inset 0 1px 0 #ffffff !important;
+  }
+
+  @keyframes float-heart {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+    50% {
+      opacity: 0.95;
+      transform: translate(-50%, -24px) scale(1.3) rotate(-8deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -42px) scale(0.9) rotate(8deg);
+    }
+  }
+
+  :global(.floating-heart) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    pointer-events: none;
+    font-size: 16px;
+    z-index: 40;
+    animation: float-heart 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+</style>
+
 <script>
+  import { playTapSound } from '../utils/sound';
+
   let timeIntervalId: number | undefined;
 
   function updateGurugramTime() {
@@ -61,8 +158,168 @@ const initialTime = new Intl.DateTimeFormat('en-US', {
     timeIntervalId = window.setInterval(updateGurugramTime, 1000);
   }
 
-  startGurugramClock();
-  document.addEventListener('astro:page-load', startGurugramClock);
+  async function fetchWithTimeout(url: string, timeoutMs = 4500) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(id);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      clearTimeout(id);
+      throw err;
+    }
+  }
+
+  function spawnHeartParticle(btn: HTMLElement) {
+    const heart = document.createElement('span');
+    heart.className = 'floating-heart';
+    heart.textContent = '❤️';
+    btn.appendChild(heart);
+    setTimeout(() => {
+      heart.remove();
+    }, 900);
+  }
+
+  async function initViews() {
+    const viewCountEl = document.getElementById('view-count');
+    if (!viewCountEl) return;
+
+    const cachedViews = localStorage.getItem('cached_portfolio_views');
+    if (cachedViews && viewCountEl.querySelector('.animate-pulse')) {
+      viewCountEl.textContent = Number(cachedViews).toLocaleString();
+    }
+
+    const sessionKey = 'portfolio_view_counted';
+    const isCounted = sessionStorage.getItem(sessionKey) === 'true';
+    const endpoint = isCounted
+      ? 'https://counterapi.com/api/aayaankumar.com/view/portfolio?readOnly=true'
+      : 'https://counterapi.com/api/aayaankumar.com/view/portfolio';
+
+    try {
+      const data = await fetchWithTimeout(endpoint);
+      if (data && typeof data.value === 'number') {
+        viewCountEl.textContent = data.value.toLocaleString();
+        localStorage.setItem('cached_portfolio_views', String(data.value));
+        if (!isCounted) {
+          sessionStorage.setItem(sessionKey, 'true');
+        }
+      }
+    } catch {
+      if (!viewCountEl.textContent || viewCountEl.querySelector('.animate-pulse')) {
+        viewCountEl.textContent = cachedViews ? Number(cachedViews).toLocaleString() : '1+';
+      }
+    }
+  }
+
+  async function initLikes() {
+    const likeBtn = document.getElementById('like-btn') as HTMLButtonElement | null;
+    const likeCountEl = document.getElementById('like-count');
+    const likeIcon = document.getElementById('like-icon');
+    const likeLabel = document.getElementById('like-label');
+    const likeToast = document.getElementById('like-toast');
+    if (!likeBtn || !likeCountEl || !likeIcon || !likeLabel) return;
+
+    let isLiked = localStorage.getItem('portfolio_liked') === 'true';
+    const cachedLikes = localStorage.getItem('cached_portfolio_likes');
+    let currentLikes = cachedLikes ? parseInt(cachedLikes, 10) : 0;
+
+    function applyLikedStyles(animate = false) {
+      if (!likeBtn || !likeIcon || !likeLabel || !likeCountEl) return;
+      likeBtn.classList.add('like-active');
+      likeIcon.classList.add('icon-fill-active', 'text-rose-500');
+      likeIcon.classList.remove('text-neutral-400');
+      likeLabel.textContent = 'Liked';
+      likeLabel.classList.add('text-rose-600');
+      likeLabel.classList.remove('text-text-muted');
+      likeCountEl.classList.add('text-rose-700');
+
+      if (animate) {
+        likeIcon.classList.add('scale-125');
+        setTimeout(() => likeIcon.classList.remove('scale-125'), 200);
+      }
+    }
+
+    if (isLiked) {
+      applyLikedStyles(false);
+    }
+
+    if (cachedLikes && likeCountEl.querySelector('.animate-pulse')) {
+      likeCountEl.textContent = currentLikes.toLocaleString();
+    }
+
+    // Fetch live likes count
+    try {
+      const data = await fetchWithTimeout('https://counterapi.com/api/aayaankumar.com/like/portfolio?readOnly=true');
+      if (data && typeof data.value === 'number') {
+        currentLikes = data.value;
+        likeCountEl.textContent = currentLikes.toLocaleString();
+        localStorage.setItem('cached_portfolio_likes', String(currentLikes));
+      }
+    } catch {
+      if (!likeCountEl.textContent || likeCountEl.querySelector('.animate-pulse')) {
+        likeCountEl.textContent = currentLikes > 0 ? currentLikes.toLocaleString() : '1';
+      }
+    }
+
+    function showToast(text: string) {
+      if (!likeToast) return;
+      likeToast.textContent = text;
+      likeToast.classList.remove('opacity-0', '-translate-y-1');
+      likeToast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        likeToast.classList.add('opacity-0', '-translate-y-1');
+        likeToast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2000);
+    }
+
+    if (!likeBtn.dataset.bound) {
+      likeBtn.dataset.bound = 'true';
+      likeBtn.addEventListener('click', async () => {
+        isLiked = localStorage.getItem('portfolio_liked') === 'true';
+        if (isLiked) {
+          playTapSound(0.35);
+          likeIcon.classList.add('scale-125');
+          setTimeout(() => likeIcon.classList.remove('scale-125'), 180);
+          showToast('Already liked! ❤️');
+          return;
+        }
+
+        // Optimistic like update
+        playTapSound(0.5);
+        isLiked = true;
+        localStorage.setItem('portfolio_liked', 'true');
+        currentLikes += 1;
+        likeCountEl.textContent = currentLikes.toLocaleString();
+        localStorage.setItem('cached_portfolio_likes', String(currentLikes));
+
+        applyLikedStyles(true);
+        spawnHeartParticle(likeBtn);
+        showToast('Thanks for the love! ❤️');
+
+        try {
+          const data = await fetchWithTimeout('https://counterapi.com/api/aayaankumar.com/like/portfolio');
+          if (data && typeof data.value === 'number' && data.value > currentLikes) {
+            currentLikes = data.value;
+            likeCountEl.textContent = currentLikes.toLocaleString();
+            localStorage.setItem('cached_portfolio_likes', String(currentLikes));
+          }
+        } catch {
+          // Graceful fallback: local optimistic like is already displayed & saved
+        }
+      });
+    }
+  }
+
+  function setupFooter() {
+    startGurugramClock();
+    initViews();
+    initLikes();
+  }
+
+  setupFooter();
+  document.addEventListener('astro:page-load', setupFooter);
   document.addEventListener('astro:before-swap', () => {
     if (timeIntervalId) {
       window.clearInterval(timeIntervalId);

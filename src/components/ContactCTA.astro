@@ -38,26 +38,47 @@
 </section>
 
 <script>
-  const copyBtn = document.getElementById('cta-copy-email-btn');
-  const copyText = document.getElementById('cta-copy-text');
-  const copyIcon = document.getElementById('cta-copy-icon');
+  import { playTapSound } from '../utils/sound';
 
-  if (copyBtn && copyText && copyIcon) {
-    copyBtn.addEventListener('click', async () => {
-      const email = copyBtn.getAttribute('data-email') || 'kumar.aayaan007@gmail.com';
-      try {
-        await navigator.clipboard.writeText(email);
-        copyText.textContent = 'Copied!';
-        copyIcon.textContent = 'check';
-        copyBtn.classList.add('text-emerald-700', 'border-emerald-300');
-        setTimeout(() => {
-          copyText.textContent = 'Copy';
-          copyIcon.textContent = 'content_copy';
-          copyBtn.classList.remove('text-emerald-700', 'border-emerald-300');
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy email:', err);
-      }
+  function setupCTA() {
+    const ctaSection = document.querySelector('[data-gsap="cta"]');
+    if (!ctaSection) return;
+
+    // Attach tap sound to all clickable elements in the CTA card
+    const clickables = ctaSection.querySelectorAll<HTMLElement>('a, button');
+    clickables.forEach((el) => {
+      if (el.dataset.soundBound === 'true') return;
+      el.dataset.soundBound = 'true';
+      el.addEventListener('click', () => {
+        playTapSound(0.45);
+      });
     });
+
+    const copyBtn = document.getElementById('cta-copy-email-btn');
+    const copyText = document.getElementById('cta-copy-text');
+    const copyIcon = document.getElementById('cta-copy-icon');
+
+    if (copyBtn && copyText && copyIcon && !copyBtn.dataset.copyBound) {
+      copyBtn.dataset.copyBound = 'true';
+      copyBtn.addEventListener('click', async () => {
+        const email = copyBtn.getAttribute('data-email') || 'kumar.aayaan007@gmail.com';
+        try {
+          await navigator.clipboard.writeText(email);
+          copyText.textContent = 'Copied!';
+          copyIcon.textContent = 'check';
+          copyBtn.classList.add('text-emerald-700', 'border-emerald-300');
+          setTimeout(() => {
+            copyText.textContent = 'Copy';
+            copyIcon.textContent = 'content_copy';
+            copyBtn.classList.remove('text-emerald-700', 'border-emerald-300');
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy email:', err);
+        }
+      });
+    }
   }
+
+  setupCTA();
+  document.addEventListener('astro:page-load', setupCTA);
 </script>

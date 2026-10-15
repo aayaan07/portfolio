@@ -115,12 +115,31 @@
     cursor: not-allowed !important;
   }
 
-  /* Canvas dynamic grab states */
-  canvas[style*="cursor: grab"] {
-    cursor: grab !important;
+  /* Canvas and custom art cursor: ensure custom arrow pointer is applied by default */
+  canvas,
+  canvas[style*="cursor: default"],
+  canvas[style*="cursor:default"],
+  canvas[style*="cursor: auto"],
+  canvas[style*="cursor:auto"],
+  [style*="cursor: default"],
+  [style*="cursor:default"],
+  .sky-header-art,
+  .sky-canvas,
+  .forest-footer-art,
+  .forest-canvas {
+    cursor: -webkit-image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto !important;
+    cursor: image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto !important;
   }
-  canvas[style*="cursor: grabbing"] {
-    cursor: grabbing !important;
+
+  /* Interactive canvas targets (clouds, moon, stag deer, dragging) */
+  canvas[style*="cursor: pointer"],
+  canvas[style*="cursor:pointer"],
+  canvas[style*="cursor: grab"],
+  canvas[style*="cursor:grab"],
+  canvas[style*="cursor: grabbing"],
+  canvas[style*="cursor:grabbing"] {
+    cursor: -webkit-image-set(url('/hand-pointer.png') 1x, url('/hand-pointer@2x.png') 2x) 6 1, url('/hand-pointer.png') 6 1, pointer !important;
+    cursor: image-set(url('/hand-pointer.png') 1x, url('/hand-pointer@2x.png') 2x) 6 1, url('/hand-pointer.png') 6 1, pointer !important;
   }
 
   ::-webkit-scrollbar {
