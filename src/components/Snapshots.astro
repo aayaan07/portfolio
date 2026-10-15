@@ -61,6 +61,7 @@ const shuffledShots = [...shots].sort(() => Math.random() - 0.5);
               src={shot.src}
               alt={shot.alt}
               loading={index < 6 ? "eager" : "lazy"}
+              decoding="async"
               class="w-full h-auto object-cover block group-hover:scale-[1.03] transition-transform duration-500 ease-out"
             />
           </div>

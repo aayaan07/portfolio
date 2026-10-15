@@ -1382,10 +1382,51 @@ const { height = "560px", dotSize = 3 } = Astro.props;
         }
       }
 
-      requestAnimationFrame(renderLoop);
+      if (!isVisible || document.hidden) {
+        rafId = null;
+        return;
+      }
+      rafId = requestAnimationFrame(renderLoop);
     }
 
-    requestAnimationFrame(renderLoop);
+    let isVisible = false;
+    let rafId: number | null = null;
+
+    function startLoop() {
+      if (rafId === null && isVisible && !document.hidden) {
+        rafId = requestAnimationFrame(renderLoop);
+      }
+    }
+
+    function stopLoop() {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        isVisible = entry?.isIntersecting ?? false;
+        if (isVisible) {
+          startLoop();
+        } else {
+          stopLoop();
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(wrapper);
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stopLoop();
+      } else if (isVisible) {
+        startLoop();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
   }
 
   function bootForestFooters() {

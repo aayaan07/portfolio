@@ -5,7 +5,7 @@ import WelcomeCalligraphy from './WelcomeCalligraphy.astro';
 
 <div
   id="welcome-loader"
-  class="fixed inset-0 z-40 flex items-center justify-center select-none pointer-events-none"
+  class="fixed inset-0 z-40 bg-canvas flex items-center justify-center select-none pointer-events-none"
   aria-label="Welcome loader"
 >
   <div class="welcome-loader-content w-full flex flex-col items-center justify-center px-4 sm:px-6">
@@ -14,54 +14,47 @@ import WelcomeCalligraphy from './WelcomeCalligraphy.astro';
 </div>
 
 <script>
-  import gsap from 'gsap';
+  function dismissWelcomeLoader() {
+    const loader = document.getElementById('welcome-loader');
+    if (!loader) return;
+
+    if (loader.dataset.done === 'true') return;
+    loader.dataset.done = 'true';
+
+    // Unlock scrolling immediately
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+
+    // Smoothly blur and fade out the welcome calligraphy & canvas backdrop
+    loader.style.transition = 'opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.65s ease, transform 0.65s ease';
+    loader.style.opacity = '0';
+    loader.style.filter = 'blur(10px)';
+    loader.style.transform = 'scale(0.96)';
+
+    // Notify Animations.astro to start the portfolio entrance animations
+    window.dispatchEvent(new CustomEvent('welcome-loader-finished'));
+
+    // Completely remove loader element from layout after fade-out completes
+    window.setTimeout(() => {
+      loader.style.display = 'none';
+    }, 700);
+  }
 
   function initWelcomeLoader() {
     const loader = document.getElementById('welcome-loader');
-    const mainContent = document.getElementById('main-content');
-    if (!loader || !mainContent) return;
+    if (!loader || loader.dataset.done === 'true') return;
 
     // Prevent scrolling while welcome loader is active
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 
-    // Random duration between 3.0s and 4.5s (3000ms - 4500ms)
-    const randomDurationMs = 3000 + Math.random() * 1500;
+    // Random duration between 3.0s and 4.0s (3000ms - 4000ms)
+    const randomDurationMs = 3000 + Math.random() * 1000;
 
-    window.setTimeout(() => {
-      // Mark loader as completed so Animations.astro knows to proceed immediately
-      loader.dataset.done = 'true';
+    window.setTimeout(dismissWelcomeLoader, randomDurationMs);
 
-      // Unlock scrolling
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-
-      // Smoothly blur and fade out the welcome calligraphy
-      gsap.to(loader, {
-        opacity: 0,
-        filter: 'blur(10px)',
-        scale: 0.96,
-        duration: 0.65,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          loader.style.display = 'none';
-        },
-      });
-
-      // Smoothly reveal the main content container
-      mainContent.style.visibility = 'visible';
-      mainContent.classList.remove('invisible', 'pointer-events-none');
-      gsap.to(mainContent, {
-        opacity: 1,
-        duration: 0.6,
-        ease: 'power2.out',
-        onStart: () => {
-          mainContent.style.pointerEvents = 'auto';
-          // Notify Animations.astro to start the portfolio entrance animations
-          window.dispatchEvent(new CustomEvent('welcome-loader-finished'));
-        },
-      });
-    }, randomDurationMs);
+    // Hard fallback safety: guaranteed dismissal after 4.5s
+    window.setTimeout(dismissWelcomeLoader, 4500);
   }
 
   if (document.readyState === 'loading') {
@@ -69,4 +62,6 @@ import WelcomeCalligraphy from './WelcomeCalligraphy.astro';
   } else {
     initWelcomeLoader();
   }
+
+  document.addEventListener('astro:page-load', initWelcomeLoader);
 </script>

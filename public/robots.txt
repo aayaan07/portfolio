@@ -1,0 +1,22 @@
+# robots.txt for Aayaan Kumar Portfolio
+User-agent: *
+Allow: /
+
+# AI Crawlers & Answer Engines (AEO/GEO optimization)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Sitemap
+Sitemap: https://aayaankumar.com/sitemap.xml

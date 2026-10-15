@@ -34,6 +34,8 @@ const initialTime = new Intl.DateTimeFormat('en-US', {
 </footer>
 
 <script>
+  let timeIntervalId: number | undefined;
+
   function updateGurugramTime() {
     const timeEl = document.getElementById('gurugram-time');
     if (!timeEl) return;
@@ -51,7 +53,20 @@ const initialTime = new Intl.DateTimeFormat('en-US', {
     }
   }
 
-  updateGurugramTime();
-  setInterval(updateGurugramTime, 1000);
-  document.addEventListener('astro:page-load', updateGurugramTime);
+  function startGurugramClock() {
+    if (timeIntervalId) {
+      window.clearInterval(timeIntervalId);
+    }
+    updateGurugramTime();
+    timeIntervalId = window.setInterval(updateGurugramTime, 1000);
+  }
+
+  startGurugramClock();
+  document.addEventListener('astro:page-load', startGurugramClock);
+  document.addEventListener('astro:before-swap', () => {
+    if (timeIntervalId) {
+      window.clearInterval(timeIntervalId);
+      timeIntervalId = undefined;
+    }
+  });
 </script>

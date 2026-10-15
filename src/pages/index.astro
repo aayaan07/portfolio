@@ -15,40 +15,36 @@ import Animations from '../components/Animations.astro';
 import WelcomeLoader from '../components/WelcomeLoader.astro';
 ---
 
-<Layout title="Aayaan Kumar">
+<Layout
+  title="Aayaan Kumar — Software Engineer"
+  description="Personal portfolio of Aayaan Kumar — Computer Science student and Software Engineer building resilient web systems, open-source tooling, and tactile user interfaces."
+>
   <!-- Top Interactive Sky (remains visible during welcome loading) -->
-  <SkyHeader height="190px" dotSize={3} />
-
-  <!-- Center Welcome Calligraphy Loader (random 3s - 4.5s duration) -->
-  <WelcomeLoader />
-
-  <!-- Main Content Wrapper (hidden during loading, reveals when loader fades out) -->
-  <div id="main-content" class="opacity-0 invisible pointer-events-none flex-1 flex flex-col justify-between">
-    <main class="w-full max-w-[760px] mx-auto px-5 md:px-8 pt-4 sm:pt-6 flex-1">
-      <div class="flex flex-col w-full">
-        <Hero />
-        <Stack />
-        <SelectedWork />
-        <Experience />
-        <Games />
-        <Snapshots />
-        <Spotify />
-        <ContactCTA />
-      </div>
-    </main>
-
-    <Footer />
-
-    <!-- Bottom Interactive Forest & Grazing Deer (hidden during loading) -->
-    <ForestFooter height="270px" dotSize={3} />
+  <div class="relative z-50 w-full pointer-events-auto">
+    <SkyHeader height="190px" dotSize={3} />
   </div>
 
-  <noscript>
-    <style>
-      #welcome-loader { display: none !important; }
-      #main-content { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
-    </style>
-  </noscript>
+  <!-- Center Welcome Calligraphy Loader (random 3s - 4.2s duration) -->
+  <WelcomeLoader />
+
+  <!-- Natural Document Flow -->
+  <main class="w-full max-w-[760px] mx-auto px-5 md:px-8 pt-4 sm:pt-6 flex-1 relative z-10">
+    <div class="flex flex-col w-full">
+      <Hero />
+      <Stack />
+      <SelectedWork />
+      <Experience />
+      <Games />
+      <Snapshots />
+      <Spotify />
+      <ContactCTA />
+    </div>
+  </main>
+
+  <Footer />
+
+  <!-- Bottom Interactive Forest & Grazing Deer (hidden during loading by welcome-loader backdrop) -->
+  <ForestFooter height="270px" dotSize={3} />
 
   <Animations />
 </Layout>

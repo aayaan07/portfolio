@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/PlusJakartaSans-VariableFont_wght.ttf') format('truetype-variations'),
+       url('/fonts/PlusJakartaSans-VariableFont_wght.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: italic;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf') format('truetype-variations'),
+       url('/fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf') format('truetype');
+}
+
 @theme {
   --color-canvas: #FAFAFA;
   --color-background: #f9f9f9;
@@ -34,6 +52,8 @@
   html, body {
     margin: 0;
     padding: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     cursor: -webkit-image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto;
     cursor: image-set(url('/pointer.png') 1x, url('/pointer@2x.png') 2x) 1 1, url('/pointer.png') 1 1, auto;
   }

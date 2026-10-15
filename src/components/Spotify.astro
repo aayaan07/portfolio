@@ -31,12 +31,12 @@ const initialTrack = playlist[Math.floor(Math.random() * playlist.length)];
 
   <iframe
     id="spotify-iframe"
+    title="Spotify Track Player"
     data-testid="embed-iframe"
-    style="border-radius:12px"
+    class="border-0 rounded-xl"
     src={initialTrack}
     width="100%"
     height="352"
-    frameBorder="0"
     allowfullscreen=""
     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
     loading="lazy"
@@ -54,28 +54,31 @@ const initialTrack = playlist[Math.floor(Math.random() * playlist.length)];
     'https://open.spotify.com/embed/track/4AoQVhME8Ko6LNm4lV2wwQ?utm_source=generator&si=e6571a456ad74a95',
   ];
 
-  const iframe = document.getElementById('spotify-iframe') as HTMLIFrameElement;
-  const shuffleBtn = document.getElementById('shuffle-track-btn');
-  const shuffleIcon = document.getElementById('shuffle-icon');
+  function setupSpotifyShuffle() {
+    const iframe = document.getElementById('spotify-iframe') as HTMLIFrameElement | null;
+    const shuffleBtn = document.getElementById('shuffle-track-btn');
+    const shuffleIcon = document.getElementById('shuffle-icon');
 
-  function pickRandomTrack() {
-    if (!iframe || playlist.length <= 1) return;
-    const currentSrc = iframe.src;
-    const pool = playlist.filter(url => url !== currentSrc);
-    const chosen = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : playlist[0];
-    iframe.src = chosen;
+    function pickRandomTrack() {
+      if (!iframe || playlist.length <= 1) return;
+      const currentSrc = iframe.src;
+      const pool = playlist.filter(url => url !== currentSrc);
+      const chosen = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : playlist[0];
+      iframe.src = chosen;
+    }
+
+    if (shuffleBtn && !shuffleBtn.dataset.bound) {
+      shuffleBtn.dataset.bound = 'true';
+      shuffleBtn.addEventListener('click', () => {
+        if (shuffleIcon) {
+          shuffleIcon.classList.add('rotate-180');
+          setTimeout(() => shuffleIcon.classList.remove('rotate-180'), 300);
+        }
+        pickRandomTrack();
+      });
+    }
   }
 
-  if (shuffleBtn) {
-    shuffleBtn.addEventListener('click', () => {
-      if (shuffleIcon) {
-        shuffleIcon.classList.add('rotate-180');
-        setTimeout(() => shuffleIcon.classList.remove('rotate-180'), 300);
-      }
-      pickRandomTrack();
-    });
-  }
-
-  // Randomize track on client load
-  pickRandomTrack();
+  setupSpotifyShuffle();
+  document.addEventListener('astro:page-load', setupSpotifyShuffle);
 </script>

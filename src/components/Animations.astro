@@ -64,13 +64,15 @@
     // If welcome loader is active, wait for it to finish and fade out before starting entrance animations
     const welcomeLoader = document.getElementById('welcome-loader');
     if (welcomeLoader && welcomeLoader.dataset.done !== 'true' && welcomeLoader.style.display !== 'none') {
-      window.addEventListener(
-        'welcome-loader-finished',
-        () => {
-          initAnimations();
-        },
-        { once: true }
-      );
+      let started = false;
+      const onFinished = () => {
+        if (started) return;
+        started = true;
+        initAnimations();
+      };
+      window.addEventListener('welcome-loader-finished', onFinished, { once: true });
+      // Safety watchdog: ensure animations start after 4.8s even if event was missed
+      window.setTimeout(onFinished, 4800);
       return;
     }
 
@@ -85,6 +87,9 @@
     });
 
     gsapCtx = gsap.context(() => {
+      // Recalculate all scroll trigger offsets now that document is mounted and ready
+      ScrollTrigger.refresh();
+
       // ----------------------------------------------------
       // Section 1 & 2: Hero & Stack Sequential Hierarchy (Extended Duration)
       // ----------------------------------------------------
@@ -101,7 +106,7 @@
         isAtPageTop && headerRect && headerRect.top < window.innerHeight * 0.92;
 
       if (isStackHeaderInViewOnLoad) {
-        const loadTl = gsap.timeline({ delay: 0.08 });
+        const loadTl = gsap.timeline({ delay: 0.15 });
 
         if (heroElements.length > 0) {
           loadTl.from(

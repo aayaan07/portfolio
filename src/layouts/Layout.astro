@@ -4,12 +4,82 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
+  canonicalURL?: string;
 }
 
 const {
   title = 'Aayaan Kumar — Software Engineer / Gamer / Editor',
-  description = 'Crafting intuitive digital products at the intersection of engineering rigor and meticulous interaction design.'
+  description = 'Crafting intuitive digital products at the intersection of engineering rigor and meticulous interaction design. Second-year CS student architecting resilient web systems, open-source tooling, and tactile design languages.',
+  image = '/avatar.png',
+  canonicalURL,
 } = Astro.props;
+
+const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://aayaankumar.com';
+const canonical = canonicalURL || `${siteUrl}/`;
+const ogImage = image.startsWith('http') ? image : `${siteUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Person',
+      '@id': `${siteUrl}/#person`,
+      name: 'Aayaan Kumar',
+      jobTitle: 'Software Engineer',
+      description: description,
+      url: siteUrl,
+      image: ogImage,
+      alumniOf: {
+        '@type': 'CollegeOrUniversity',
+        name: 'IILM University',
+        location: {
+          '@type': 'Place',
+          name: 'Gurugram, India',
+        },
+      },
+      sameAs: [
+        'https://github.com/aayaan07',
+        'https://www.linkedin.com/in/aayaan-kumar-61444833b/',
+        'https://x.com/aayaan_07',
+      ],
+      knowsAbout: [
+        'Software Engineering',
+        'Web Systems',
+        'React',
+        'Next.js',
+        'TypeScript',
+        'JavaScript',
+        'Python',
+        'Tailwind CSS',
+        'Interaction Design',
+        'UI/UX Architecture',
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}/#website`,
+      url: siteUrl,
+      name: 'Aayaan Kumar',
+      description: description,
+      publisher: {
+        '@id': `${siteUrl}/#person`,
+      },
+    },
+    {
+      '@type': 'ProfilePage',
+      '@id': `${siteUrl}/#profile`,
+      url: canonical,
+      name: title,
+      isPartOf: {
+        '@id': `${siteUrl}/#website`,
+      },
+      mainEntity: {
+        '@id': `${siteUrl}/#person`,
+      },
+    },
+  ],
+};
 ---
 
 <!doctype html>
@@ -21,12 +91,42 @@ const {
     <link rel="shortcut icon" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
+
+    <!-- Primary Meta Tags -->
+    <title>{title}</title>
+    <meta name="title" content={title} />
     <meta name="description" content={description} />
+    <meta name="author" content="Aayaan Kumar" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="theme-color" content="#FAFAFA" />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="Aayaan Kumar" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonical} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:creator" content="@aayaan_07" />
+
+    <!-- Structured Data (JSON-LD) for Google, Perplexity, & LLM Knowledge Graphs -->
+    <script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+
+    <!-- Local Font Preload (High Performance with font-display: swap) -->
+    <link rel="preload" href="/fonts/PlusJakartaSans-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
+
+    <!-- Google Web Icon Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-    <title>{title}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-canvas font-sans text-[15px] leading-[24px] tracking-[-0.005em] text-[#1a1c1c] antialiased selection:bg-surface-container selection:text-text-primary min-h-screen flex flex-col justify-between">
     <slot />
